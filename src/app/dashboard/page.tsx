@@ -1,0 +1,401 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Navbar } from "@/components/layout/Navbar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Plus,
+  Upload,
+  FileText,
+  Star,
+  Target,
+  Trash2,
+  Edit,
+  Calendar,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+import ResumeUploader from "@/components/upload/ResumeUploader";
+import { ResumeData } from "@/types/resume";
+
+interface ResumeRecord {
+  id: string;
+  title: string;
+  isBase: boolean;
+  template: string;
+  fullName: string;
+  email: string;
+  updatedAt: string;
+  tailoring?: {
+    atsScore?: number;
+    companyName?: string;
+    jobTitle?: string;
+  } | null;
+}
+
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [resumes, setResumes] = useState<ResumeRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+
+  const fetchResumes = useCallback(async () => {
+    try {
+      const res = await fetch("/api/resume");
+      if (res.ok) {
+        const data = await res.json();
+        setResumes(data.resumes);
+      }
+    } catch {
+      toast.error("Failed to load resumes");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
+    if (status === "authenticated") {
+      fetchResumes();
+    }
+  }, [status, router, fetchResumes]);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/resume/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setResumes((prev) => prev.filter((r) => r.id !== id));
+        toast.success("Resume deleted");
+      } else {
+        toast.error("Failed to delete resume");
+      }
+    } catch {
+      toast.error("Failed to delete resume");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleCreateBlank() {
+    try {
+      const res = await fetch("/api/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "New Resume",
+          fullName: session?.user?.name || "Your Name",
+          email: session?.user?.email || "your@email.com",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/builder/${data.resume.id}`);
+      } else {
+        toast.error("Failed to create resume");
+      }
+    } catch {
+      toast.error("Failed to create resume");
+    }
+  }
+
+  async function handleParsedResume(parsedData: ResumeData) {
+    setShowUploadDialog(false);
+    try {
+      const res = await fetch("/api/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...parsedData,
+          title: "Uploaded Resume",
+          isBase: true,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success("Resume parsed and saved!");
+        router.push(`/builder/${data.resume.id}`);
+      } else {
+        toast.error("Failed to save parsed resume");
+      }
+    } catch {
+      toast.error("Failed to save parsed resume");
+    }
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  const baseResumes = resumes.filter((r) => r.isBase);
+  const tailoredResumes = resumes.filter((r) => !r.isBase);
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-6 py-10">
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-48 mb-10" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-48 rounded-xl" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold mb-1">
+            Welcome back,{" "}
+            <span className="gradient-text">
+              {session?.user?.name || "there"}
+            </span>
+          </h1>
+          <p className="text-muted-foreground">
+            You have {resumes.length} resume{resumes.length !== 1 ? "s" : ""}{" "}
+            saved
+          </p>
+        </div>
+
+        {/* Quick actions */}
+        <div className="flex flex-wrap gap-3 mb-10">
+          <Button onClick={handleCreateBlank} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create New Resume
+          </Button>
+          <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+            <DialogTrigger
+              render={
+                <Button variant="outline" className="gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload Resume (PDF/Word)
+                </Button>
+              }
+            />
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Upload Your Resume</DialogTitle>
+                <DialogDescription>
+                  Upload a PDF or Word document. Our AI will extract all your
+                  information automatically.
+                </DialogDescription>
+              </DialogHeader>
+              <ResumeUploader
+                onParsed={handleParsedResume}
+                onError={(err: string) => toast.error(err)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Base Resumes */}
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <Star className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Base Resumes</h2>
+          </div>
+
+          {baseResumes.length === 0 ? (
+            <Card className="glass-card border-dashed border-2 border-border/50">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  No base resumes yet. Create one to get started!
+                </p>
+                <Button onClick={handleCreateBlank} variant="outline" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Your First Resume
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+              {baseResumes.map((resume) => (
+                <Card
+                  key={resume.id}
+                  className="glass-card border-border/50 card-hover group"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg truncate">
+                          {resume.title}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          Updated {formatDate(resume.updatedAt)}
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="bg-primary/15 text-primary shrink-0"
+                      >
+                        Base
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 truncate">
+                      {resume.fullName} &middot; {resume.email}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/builder/${resume.id}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-1"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          Edit
+                        </Button>
+                      </Link>
+                      <Link
+                        href={`/builder/${resume.id}/tailor`}
+                        className="flex-1"
+                      >
+                        <Button size="sm" className="w-full gap-1">
+                          <Target className="w-3.5 h-3.5" />
+                          Tailor
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(resume.id)}
+                        disabled={deletingId === resume.id}
+                      >
+                        {deletingId === resume.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Tailored Resumes */}
+        {tailoredResumes.length > 0 && (
+          <section>
+            <Separator className="mb-8" />
+            <div className="flex items-center gap-2 mb-6">
+              <Target className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Tailored Resumes</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+              {tailoredResumes.map((resume) => (
+                <Card
+                  key={resume.id}
+                  className="glass-card border-border/50 card-hover group"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg truncate">
+                          {resume.title}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(resume.updatedAt)}
+                        </CardDescription>
+                      </div>
+                      {resume.tailoring?.atsScore != null && (
+                        <Badge
+                          className={`shrink-0 ${
+                            resume.tailoring.atsScore >= 70
+                              ? "bg-success/15 text-success"
+                              : resume.tailoring.atsScore >= 40
+                              ? "bg-warning/15 text-warning"
+                              : "bg-destructive/15 text-destructive"
+                          }`}
+                        >
+                          ATS: {resume.tailoring.atsScore}%
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 truncate">
+                      {resume.tailoring?.companyName} &middot;{" "}
+                      {resume.tailoring?.jobTitle}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/builder/${resume.id}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-1"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          View
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(resume.id)}
+                        disabled={deletingId === resume.id}
+                      >
+                        {deletingId === resume.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
