@@ -20,6 +20,15 @@ model User {
   resumes        Resume[]
   accounts       Account[]
   sessions       Session[]
+  
+  // Stripe Subscription
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?   @unique
+  stripePriceId          String?
+  aiCredits               Int       @default(5)
+  resumesCreated          Int       @default(0)
+  creditsUsed             Int       @default(0)
+  jobApplications JobApplication[]
 }
 
 model Account {
@@ -83,6 +92,7 @@ model Resume {
   projects    Project[]
   tailoring   TailoringJob? @relation("TailoredResume")
 
+  jobApplications JobApplication[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -147,4 +157,18 @@ model TailoringJob {
   tailoredResume   Resume @relation("TailoredResume", fields: [tailoredResumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+}
+
+model JobApplication {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId    String?   // optional link to a resume used for this application
+  resume      Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  title       String
+  company     String
+  link        String?
+  appliedAt   DateTime @default(now())
+  status      String   @default("Applied")
+  notes       String?
 }

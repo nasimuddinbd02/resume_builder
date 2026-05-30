@@ -173,7 +173,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             {contactItems.map((item, i) => (
               <div
-                key={i}
+                key={`contact-${i}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -211,7 +211,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {Object.entries(skillsByCategory).map(([cat, skills]) => (
-                <div key={cat}>
+                <div key={`cat-${cat}`}>
                   <p
                     style={{
                       fontSize: '0.6rem',
@@ -307,7 +307,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {sortedExperiences.map((exp, i) => (
-                <div key={exp.id || i}>
+                <div key={exp.id || `exp-${i}`}>
                   <div
                     style={{
                       display: 'flex',
@@ -357,7 +357,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                     >
                       {exp.achievements.map((ach, j) => (
                         <li
-                          key={j}
+                          key={`ach-${j}`}
                           style={{
                             fontSize: '0.76rem',
                             lineHeight: 1.5,
@@ -396,7 +396,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {sortedEducation.map((edu, i) => (
-                <div key={edu.id || i}>
+                <div key={edu.id || `edu-${i}`}>
                   <div
                     style={{
                       display: 'flex',
@@ -472,7 +472,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               {sortedProjects.map((proj, i) => (
-                <div key={proj.id || i}>
+                <div key={proj.id || `proj-${i}`}>
                   <div
                     style={{
                       display: 'flex',

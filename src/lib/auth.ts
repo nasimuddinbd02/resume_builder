@@ -1,6 +1,7 @@
 import { AuthOptions, getServerSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { validateUserCredentials } from '@/services/user-service';
+import { prisma } from '@/lib/prisma';
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -35,6 +36,23 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id as string;
+        
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { stripePriceId: true, stripeCurrentPeriodEnd: true }
+          });
+          
+          const isPro = Boolean(
+            dbUser?.stripePriceId &&
+            dbUser.stripeCurrentPeriodEnd &&
+            dbUser.stripeCurrentPeriodEnd.getTime() + 86400000 > Date.now()
+          );
+          
+          (session.user as any).isPro = isPro;
+        } catch (e) {
+          (session.user as any).isPro = false;
+        }
       }
       return session;
     },
@@ -47,6 +65,7 @@ export interface CustomSession {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    isPro?: boolean;
   };
 }
 

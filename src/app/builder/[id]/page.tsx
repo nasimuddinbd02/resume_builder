@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, use } from "react";
+import { Sun, Moon } from 'lucide-react';
+import { Link as LinkedInIcon } from 'lucide-react';
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
@@ -13,6 +16,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Save,
@@ -51,6 +60,8 @@ export default function BuilderPage({
   const { id } = use(params);
   const { status } = useSession();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+
 
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [title, setTitle] = useState("");
@@ -173,6 +184,17 @@ export default function BuilderPage({
       toast.error(err instanceof Error ? err.message : "Failed to export Word document");
     }
   }
+  
+  async function handleExportLinkedIn() {
+    const { exportToLinkedInDOCX } = await import("@/lib/linkedin-export");
+    try {
+      await exportToLinkedInDOCX("resume-preview", `${title || "resume"}.docx`);
+      toast.success("LinkedIn DOCX downloaded!");
+    } catch (err) {
+      console.error("LinkedIn export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to export LinkedIn DOCX");
+    }
+  }
 
   function updateField(field: string, value: string) {
     setResumeData((prev) =>
@@ -196,8 +218,9 @@ export default function BuilderPage({
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <TooltipProvider>
+      <div className="min-h-screen">
+        <Navbar />
       <main className="max-w-[1800px] mx-auto px-6 py-6">
         {/* Top bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -227,44 +250,99 @@ export default function BuilderPage({
               <option value="executive">Executive Template</option>
               <option value="minimal">Minimal Template</option>
             </select>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1"
-              onClick={handleExportPDF}
-            >
-              <Download className="w-3.5 h-3.5" />
-              PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1"
-              onClick={handleExportDOCX}
-            >
-              <Download className="w-3.5 h-3.5" />
-              Word
-            </Button>
-            <Link href={`/builder/${id}/tailor`}>
-              <Button variant="outline" size="sm" className="gap-1">
-                <Target className="w-3.5 h-3.5" />
-                Tailor
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              className="gap-1"
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Save className="w-3.5 h-3.5" />
-              )}
-              Save
-            </Button>
-          </div>
+            
+            <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={handleExportPDF}
+                    />
+                  }
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    PDF
+                </TooltipTrigger>
+                <TooltipContent>Download as Print-ready PDF</TooltipContent>
+              </Tooltip>
+
+            <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={handleExportDOCX}
+                    />
+                  }
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    Word
+                </TooltipTrigger>
+                <TooltipContent>Download as Word Document</TooltipContent>
+              </Tooltip>
+
+<Tooltip>
+   <TooltipTrigger
+     render={
+       <Button
+         variant="outline"
+         size="sm"
+         className="gap-1"
+         onClick={handleExportLinkedIn}
+       />
+     }
+   >
+       <LinkedInIcon className="w-3.5 h-3.5" />
+       LinkedIn
+   </TooltipTrigger>
+   <TooltipContent>Export for LinkedIn upload</TooltipContent>
+ </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Link href={`/builder/${id}/tailor`} className="inline-flex" />
+                }
+              >
+                  <Target className="w-3.5 h-3.5" />
+                  Tailor
+              </TooltipTrigger>
+              <TooltipContent>Tailor resume with AI for a specific job</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={handleSave}
+                      disabled={isSaving}
+                    />
+                  }
+                >
+                    {isSaving ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    Save
+                </TooltipTrigger>
+              <TooltipContent>Save all changes to the cloud</TooltipContent>
+            </Tooltip>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </Button>
+        </div>
         </div>
 
         {/* Split pane */}
@@ -367,7 +445,7 @@ export default function BuilderPage({
               </span>
             </div>
             <div className="p-4 max-h-[calc(100vh-220px)] overflow-y-auto flex justify-center">
-              <div className="transform scale-[0.55] origin-top">
+              <div className="preview-wrapper">
                 <ResumePreview
                   data={resumeData}
                   template={template}
@@ -378,6 +456,7 @@ export default function BuilderPage({
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

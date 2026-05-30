@@ -9,48 +9,49 @@ export async function exportToPDF(
     throw new Error(`Element with id '${elementId}' not found`);
   }
 
-  try {
-    console.log('PDF-Export: starting import...');
-    const html2pdfModule = await import('html2pdf.js');
-    console.log('PDF-Export debug: html2pdfModule:', html2pdfModule);
-    let html2pdf: any;
-
-    if (typeof html2pdfModule === 'function') {
-      html2pdf = html2pdfModule;
-    } else if (html2pdfModule && typeof html2pdfModule.default === 'function') {
-      html2pdf = html2pdfModule.default;
-    } else if (html2pdfModule && html2pdfModule.default && typeof (html2pdfModule.default as any).default === 'function') {
-      html2pdf = (html2pdfModule.default as any).default;
-    } else if (html2pdfModule && typeof (html2pdfModule as any).html2pdf === 'function') {
-      html2pdf = (html2pdfModule as any).html2pdf;
-    } else {
-      console.error('Failed to resolve html2pdf function. Module structure:', html2pdfModule);
-      throw new Error('html2pdf library could not be resolved. Please check the browser console.');
+  // Use native browser printing which generates high-quality vector PDFs
+  // and completely bypasses html2canvas/jspdf bundling issues.
+  
+  const originalTitle = document.title;
+  // Temporarily change title so the default saved PDF filename matches
+  document.title = filename.replace('.pdf', '');
+  
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #${elementId}, #${elementId} * {
+        visibility: visible !important;
+      }
+      #${elementId} {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 8.5in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        /* Reset any scaling used for previewing */
+        transform: none !important;
+        box-shadow: none !important;
+      }
+      @page {
+        size: letter portrait;
+        margin: 0;
+      }
     }
-
-
-    const options = {
-      margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
-      filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      },
-      jsPDF: {
-        unit: 'in',
-        format: 'letter',
-        orientation: 'portrait' as const,
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-    };
-
-    await html2pdf().set(options).from(element).save();
-  } catch (error) {
-    console.error('Error during PDF export:', error);
-    throw error;
-  }
+  `;
+  document.head.appendChild(style);
+  
+  // Slight delay to ensure styles are applied
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  window.print();
+  
+  // Cleanup
+  document.head.removeChild(style);
+  document.title = originalTitle;
 }
 
 export function exportToDOCX(

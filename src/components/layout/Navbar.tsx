@@ -10,12 +10,14 @@ import {
   LogOut,
   User,
   Menu,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -32,6 +34,7 @@ import {
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/applications', label: 'Applications', icon: Briefcase },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -97,14 +100,16 @@ export function Navbar() {
               )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium">{userName ?? 'User'}</span>
-                  {userEmail && (
-                    <span className="text-xs text-muted-foreground">{userEmail}</span>
-                  )}
-                </div>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{userName ?? 'User'}</span>
+                    {userEmail && (
+                      <span className="text-xs text-muted-foreground">{userEmail}</span>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 render={<Link href="/dashboard" />}

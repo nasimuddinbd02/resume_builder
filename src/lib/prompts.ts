@@ -136,3 +136,16 @@ Job Description:
 ${jobDescription}
 """`;
 }
+
+export function getRoleTailorPrompt(
+  resumeData: ResumeData,
+  jobDescription: string,
+  jobTitle: string,
+  companyName: string,
+  role: string
+): string {
+  // Incorporate role into the tailoring prompt
+  const basePrompt = getTailorResumePrompt(resumeData, jobDescription, jobTitle, companyName);
+  return `Role: ${role}\n${basePrompt}`;
+}
+

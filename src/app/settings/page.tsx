@@ -22,6 +22,7 @@ import {
   Shield,
   Loader2,
   CheckCircle,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,6 +40,8 @@ export default function SettingsPage() {
   const [aiApiKey, setAiApiKey] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+  const [isLoadingBilling, setIsLoadingBilling] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -114,6 +117,36 @@ export default function SettingsPage() {
     toast.success("AI preferences and API key saved locally!");
   };
 
+  const handleCheckout = async () => {
+    setIsLoadingCheckout(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to create checkout session");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+      toast.error("Error creating checkout session");
+    } finally {
+      setIsLoadingCheckout(false);
+    }
+  };
+
+  const handleBillingPortal = async () => {
+    setIsLoadingBilling(true);
+    try {
+      const res = await fetch("/api/stripe/billing", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to create billing portal session");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+      toast.error("Error redirecting to billing portal");
+    } finally {
+      setIsLoadingBilling(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen">
@@ -155,6 +188,10 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2 p-3 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium text-sm cursor-pointer transition-colors">
               <Brain className="w-4 h-4" />
               AI Preferences
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium text-sm cursor-pointer transition-colors">
+              <CreditCard className="w-4 h-4" />
+              Billing & Subscription
             </div>
           </div>
 
@@ -321,6 +358,65 @@ export default function SettingsPage() {
                   <CheckCircle className="w-4 h-4" />
                   Save AI Preferences
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Billing & Subscription Card */}
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Billing & Subscription
+                </CardTitle>
+                <CardDescription>
+                  Manage your subscription plan and payment methods
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-5 border border-primary/20 bg-primary/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-semibold text-primary flex items-center gap-2">
+                      {((session?.user as any)?.isPro) ? "Pro Plan" : "Basic Plan"}
+                      <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-xs text-primary font-bold tracking-wide uppercase">
+                        {((session?.user as any)?.isPro) ? "Active" : "Free"}
+                      </span>
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {((session?.user as any)?.isPro)
+                        ? "You are currently on the Pro plan with unlimited AI tailoring."
+                        : "You are currently on the free basic plan. Upgrade to Pro for unlimited AI tailoring and premium templates."}
+                    </p>
+                  </div>
+                  {((session?.user as any)?.isPro) ? (
+                    <Button 
+                      variant="outline" 
+                      className="shrink-0 gap-2" 
+                      onClick={handleBillingPortal}
+                      disabled={isLoadingBilling}
+                    >
+                      {isLoadingBilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
+                      Manage Subscription
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="shrink-0 gap-2 pulse-glow" 
+                      onClick={handleCheckout}
+                      disabled={isLoadingCheckout}
+                    >
+                      {isLoadingCheckout ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                      Upgrade to Pro
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Payment Methods</h4>
+                  <div className="text-sm text-muted-foreground border border-border/50 rounded-lg p-6 text-center bg-card/30">
+                    {((session?.user as any)?.isPro)
+                      ? "Manage your payment methods in the Stripe billing portal."
+                      : "No payment methods on file."}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

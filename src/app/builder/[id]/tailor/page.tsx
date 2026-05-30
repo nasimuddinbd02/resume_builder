@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import JobDescriptionForm from "@/components/tailoring/JobDescriptionForm";
 import AtsScoreGauge from "@/components/tailoring/AtsScoreGauge";
 import KeywordBadges from "@/components/tailoring/KeywordBadges";
+import { getTailorResumePrompt, getCoverLetterPrompt, getRoleTailorPrompt } from '@/lib/prompts';
 import CoverLetterView from "@/components/tailoring/CoverLetterView";
 import ResumePreview from "@/components/resume/ResumePreview";
 import { ResumeData, ExperienceData, ProjectData } from "@/types/resume";
@@ -39,8 +40,9 @@ export default function TailorPage({
   const [atsScore, setAtsScore] = useState<number | null>(null);
   const [keywordsMatched, setKeywordsMatched] = useState<string[]>([]);
   const [keywordsMissing, setKeywordsMissing] = useState<string[]>([]);
-  const [jobTitle, setJobTitle] = useState("");
+  const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState("");
+  const [role, setRole] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isTailoring, setIsTailoring] = useState(false);
 
@@ -115,6 +117,7 @@ export default function TailorPage({
     setIsTailoring(true);
     setJobTitle(data.jobTitle);
     setCompanyName(data.companyName);
+    const prompt = getRoleTailorPrompt(baseResume!, data.jobDescription, data.jobTitle, data.companyName, role);
 
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -129,6 +132,7 @@ export default function TailorPage({
         body: JSON.stringify({
           resumeId: id,
           ...data,
+          prompt,
         }),
       });
 
@@ -181,6 +185,9 @@ export default function TailorPage({
       setCoverLetterText(result.coverLetterText || "");
 
       toast.success("Resume tailored successfully!");
+      toast("Application auto-tracked", {
+        description: `${data.jobTitle} at ${data.companyName} added to your Applications.`,
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Tailoring failed";
@@ -357,6 +364,13 @@ export default function TailorPage({
                   <>
                     <Target className="w-12 h-12 text-muted-foreground/40 mb-4" />
                     <p className="text-muted-foreground mb-1">
+                      <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm border border-border mr-2">
+                        <option value="">Select Role (optional)</option>
+                        <option value="Software Engineer">Software Engineer</option>
+                        <option value="Product Manager">Product Manager</option>
+                        <option value="Designer">Designer</option>
+                        <option value="Data Scientist">Data Scientist</option>
+                      </select>
                       No tailored resume yet
                     </p>
                     <p className="text-sm text-muted-foreground/70">

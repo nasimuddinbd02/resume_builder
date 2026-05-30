@@ -234,3 +234,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.45 0.06 270 / 0.7);
 }
+
+/* Responsive preview scaling */
+.preview-wrapper {
+  transform: scale(0.55);
+  transform-origin: top;
+}
+@media (max-width: 768px) {
+  .preview-wrapper {
+    transform: scale(0.9);
+  }
+}

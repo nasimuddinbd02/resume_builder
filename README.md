@@ -1,60 +1,72 @@
 # AI Resume Builder & Tailoring Platform
 
-A feature-rich, Next.js 16 application designed to construct base resumes, parse uploaded files with AI, tailor resumes to matching job descriptions, evaluate ATS scoring, and export professionally formatted documents (PDF and Microsoft Word).
+A feature-rich, Next.js 16 application designed to construct base resumes, parse uploaded files with AI, tailor resumes to matching job descriptions, evaluate ATS scoring, track job applications, and export professionally formatted documents (PDF and Microsoft Word).
+
+---
+
+## 🚀 Features
+
+* **Smart Resume Parsing**: Upload existing PDF or Word resumes and let AI extract all your information into a structured builder.
+* **AI Resume Tailoring**: Enter a target job title, company, and description, and let AI rewrite your resume to maximize relevance and ATS compatibility.
+* **ATS Score Evaluation**: Get instant feedback on how well your tailored resume matches the job description with a generated ATS score and keyword matching analysis.
+* **Auto-generated Cover Letters**: Automatically generate personalized cover letters for every tailored resume.
+* **Job Application Tracker**: Manage your job search pipeline. Applications are automatically tracked when you tailor a resume, or you can add them manually.
+* **Multi-Format Export**: Export your resume as a print-ready PDF, an editable Microsoft Word document, or format it for LinkedIn.
+* **AI Provider Flexibility**: Switch models dynamically between Gemini (`gemini-2.0-flash`), OpenAI (`gpt-4o-mini`), Claude (`claude-3-5-sonnet`), and Groq (`llama-3.3-70b`) via settings or `.env`.
+* **Premium Design System**: Built with modern web aesthetics using dark modes, glassmorphism, gradient text, and micro-animations.
+* **Stripe Subscription Billing**: Integrated Stripe checkout for Pro plan upgrades.
 
 ---
 
 ## 🏗️ System Architecture
 
-The application is structured into an **N-Tier Architecture**, decoupling client-side user interfaces, server route controllers, business logic service classes, and data access layers. AI interactions are managed by an abstract provider factory supporting multiple models (Gemini, OpenAI, Claude, Groq).
+The application is structured into an **N-Tier Architecture**, decoupling client-side user interfaces, server route controllers, business logic service classes, and data access layers.
+
+### Visual Architecture
 
 ```mermaid
 graph TD
     subgraph Client ["Client Side (Next.js Client Components)"]
-        UI["UI Views / Forms<br>(Editor, Tailor Dashboard, Settings)"]
+        UI["UI Views / Forms<br>(Editor, Tailor Dashboard, App Tracker)"]
         ClientAuth["NextAuth client-side sessions"]
-        Exporters["Client Document Exporters<br>(html2pdf.js + html2canvas-pro, docx blobs)"]
+        Exporters["Document Exporters<br>(html2pdf.js + html2canvas-pro)"]
     end
 
     subgraph Server ["Server Side (Next.js App Router API & Services)"]
-        API["API Route Handlers<br>(/api/resume, /api/tailor, /api/parse, /api/auth)"]
+        API["API Route Handlers<br>(/api/resume, /api/tailor, /api/applications)"]
         Middleware["NextAuth Proxy middleware"]
-        ServiceLayer["Service Layer / Data Access<br>(src/services/*, src/data-access/*)"]
-        AIProvider["AI Provider Factory<br>(src/lib/ai/ai-provider.ts)"]
+        ServiceLayer["Service Layer<br>(Resume Service, Tailor Service)"]
+        AIProvider["AI Provider Factory<br>(gemini, openai, claude, groq)"]
     end
 
     subgraph External ["External Layer & Storage"]
         DB["SQLite Database<br>(Prisma ORM)"]
-        GeminiAPI["Google Gemini API"]
-        OpenAIAPI["OpenAI API"]
-        ClaudeAPI["Anthropic Claude API"]
-        GroqAPI["Groq Llama-3 API"]
+        StripeAPI["Stripe API<br>(Subscriptions)"]
+        LLM["LLM APIs"]
     end
 
-    UI --> API
+    UI -->|SWR / Fetch| API
     Exporters --> UI
     ClientAuth --> API
     API --> Middleware
     Middleware --> ServiceLayer
     ServiceLayer --> DB
+    ServiceLayer --> StripeAPI
     ServiceLayer --> AIProvider
-    AIProvider --> GeminiAPI
-    AIProvider --> OpenAIAPI
-    AIProvider --> ClaudeAPI
-    AIProvider --> GroqAPI
+    AIProvider --> LLM
 ```
 
 ---
 
 ## 🗄️ Database ER Diagram
 
-The database uses SQLite managed through Prisma ORM. The schema consists of two domains: NextAuth session management models and Resume domain models (supporting tailoring jobs, projects, skills, education, and experiences).
+The database uses SQLite managed through Prisma ORM.
 
 ```mermaid
 erDiagram
-    User ||--o{ Account : "has"
-    User ||--o{ Session : "has"
     User ||--o{ Resume : "creates"
+    User ||--o{ JobApplication : "tracks"
+    User ||--|| StripeSubscription : "has"
     Resume ||--o{ WorkExperience : "contains"
     Resume ||--o{ Education : "contains"
     Resume ||--o{ Skill : "contains"
@@ -66,172 +78,128 @@ erDiagram
         String email UK
         String name
         String hashedPassword
-        String image
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    Account {
-        String id PK
-        String userId FK
-        String type
-        String provider
-        String providerAccountId UK
-        String refresh_token
-        String access_token
-        Int expires_at
-        String token_type
-        String scope
-        String id_token
-        String session_state
-    }
-
-    Session {
-        String id PK
-        String sessionToken UK
-        String userId FK
-        DateTime expires
-    }
-
-    VerificationToken {
-        String identifier UK
-        String token UK
-        DateTime expires
+        String stripeCustomerId
     }
 
     Resume {
         String id PK
-        String userId FK
-        String title
         Boolean isBase
+        String title
         String template
-        String fullName
-        String email
-        String phone
-        String location
-        String website
-        String linkedin
-        String github
-        String summary
-        DateTime createdAt
-        DateTime updatedAt
     }
 
-    WorkExperience {
+    JobApplication {
         String id PK
-        String resumeId FK
-        String jobTitle
+        String title
         String company
-        String location
-        String startDate
-        String endDate
-        Boolean isCurrent
-        String achievements "JSON String"
-        Int sortOrder
-    }
-
-    Education {
-        String id PK
+        String status
         String resumeId FK
-        String school
-        String degree
-        String field
-        String location
-        String startDate
-        String endDate
-        String gpa
-        Int sortOrder
-    }
-
-    Skill {
-        String id PK
-        String resumeId FK
-        String name
-        String category
-    }
-
-    Project {
-        String id PK
-        String resumeId FK
-        String name
-        String description
-        String technologies "JSON String"
-        String link
-        Int sortOrder
     }
 
     TailoringJob {
         String id PK
         String jobTitle
         String companyName
-        String jobDescription
         Int atsScore
         String coverLetterText
-        String keywordsMatched "JSON String"
-        String tailoredResumeId FK "Unique"
-        DateTime createdAt
     }
 ```
 
 ---
 
-## 🚀 Key Features
+## 📚 Tools & Libraries Used
 
-* **AI Provider Abstraction Layer**: Switch models dynamically between Gemini (`gemini-2.0-flash`), OpenAI (`gpt-4o-mini`), Claude (`claude-3-5-sonnet`), and Groq (`llama-3.3-70b`) using request headers or `.env` configs.
-* **Smart PDF Export**: Utilizes a customized postinstall-patched UMD mapping of `html2canvas-pro` loaded inside `html2pdf.js` to correctly render Tailwind CSS v4 color formats (e.g. `oklch()`, `lab()`) without runtime client crashes.
-* **MS Word Layout Fidelity**: Dynamically parses the resume preview DOM to reconstruct visual column sidebars and grids into native HTML tables, replacing SVGs with unicode characters (`✉`, `📞`, `📍`, `🌐`, `LinkedIn:`, `GitHub:`) for maximum fidelity inside Microsoft Word.
-* **Resilient Prisma Schema Mapping**: Features SQLite-safe schema writes converting arrays into JSON strings, defaulting null-like LLM parameters to compliant fallbacks, and parsing string integers to database fields.
+### Core Stack
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Database**: [SQLite](https://www.sqlite.org/) via [Prisma ORM](https://www.prisma.io/)
+
+### UI & Aesthetics
+- **Components**: [shadcn/ui](https://ui.shadcn.com/) and [Base UI](https://base-ui.com/) primitives (Tooltip, DropdownMenu).
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Notifications**: [Sonner](https://sonner.emilkowal.ski/)
+- **Animations**: `tw-animate-css` for micro-interactions and enter/exit animations.
+
+### AI & Integrations
+- **AI Models**: `@google/generative-ai` (Gemini), with abstract support for OpenAI, Anthropic, and Groq.
+- **Payments**: `stripe` and `@stripe/stripe-js` for subscription handling.
+- **Authentication**: `next-auth` (Credentials provider with `bcryptjs`).
+
+### Utilities
+- **Document Parsing**: `pdf-parse` (PDF extraction) and `mammoth` (DOCX extraction).
+- **Document Export**: `html2pdf.js` with `html2canvas-pro` (Print-ready PDF generation).
+- **Data Validation**: `zod` for API payload validation.
+- **Data Fetching**: `swr` for client-side state management and caching.
 
 ---
 
-## 🛠️ Getting Started
+## 📖 How to Use
+
+1. **Sign Up / Login**
+   Create an account using your email and password. Your data is securely hashed and stored locally.
+
+2. **Create a Base Resume**
+   Navigate to the **Dashboard** and either:
+   - Click "Create New Resume" to start from scratch using the manual builder.
+   - Click "Upload Resume" to let AI extract your work history, education, and skills from an existing PDF or Word document.
+
+3. **Tailor for a Job**
+   - Once your base resume is ready, click **Tailor**.
+   - Paste the Job Title, Company Name, and the Job Description.
+   - The AI will rewrite your summary, bullet points, and skills to match the job requirements, generating an **ATS Score** and identifying missing keywords.
+
+4. **Review & Export**
+   - Review your tailored resume and auto-generated cover letter.
+   - Export it directly as a PDF or Word document.
+
+5. **Track Your Application**
+   - Tailored resumes are automatically added to your **Job Applications** tracker.
+   - Visit the Applications page to move your pipeline status from "Applied" to "Interview" or "Offer".
+
+6. **Manage Settings**
+   - Go to Settings to upgrade your plan via Stripe, manage your profile, or configure custom AI provider API keys if you prefer using your own LLM endpoints.
+
+---
+
+## 🛠️ Getting Started Locally
 
 ### 1. Prerequisites
 * Node.js v20+
 * NPM, Yarn, or PNPM
 
 ### 2. Environment Configuration
-Create a `.env` (or `.env.local` for local development) file in the root folder:
+Create a `.env.local` file in the root folder:
 
 ```bash
-# Database Configuration
+# Database
 DATABASE_URL="file:./dev.db"
 
-# NextAuth Configuration
+# NextAuth
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your_nextauth_secret_hash"
 
-# AI Provider Configuration
-# Options: "gemini" | "openai" | "anthropic" | "groq"
-AI_PROVIDER="gemini"
+# Stripe (Optional for local dev)
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_PRO_PRICE_ID="price_..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-# Provider Keys
+# AI Provider Configuration
+AI_PROVIDER="gemini"
 GEMINI_API_KEY="your_google_gemini_api_key"
-OPENAI_API_KEY="your_openai_api_key"
-ANTHROPIC_API_KEY="your_anthropic_claude_api_key"
-GROQ_API_KEY="your_groq_api_key"
 ```
 
 ### 3. Install & Build
-Run install (which runs the automated `html2canvas` module patching hook):
 ```bash
+# Install dependencies
 npm install
+
+# Initialize database schema
+npx prisma db push
 ```
 
-Generate the local Prisma client and apply schema migrations:
-```bash
-npx prisma migrate dev
-```
-
-### 4. Running Locally
-Start the development server:
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
-
-### 5. Production Build
-Verify compilation and launch the optimized build:
-```bash
-npm run build
-npm run start
-```
+Open `http://localhost:3000` in your browser.
