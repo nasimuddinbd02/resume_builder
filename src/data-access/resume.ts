@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { ResumeData, ExperienceData, EducationData, SkillData, ProjectData, TailoringResult } from '@/types/resume';
 
 export async function getUserResumes(userId: string) {
   return prisma.resume.findMany({
@@ -27,15 +28,15 @@ export async function getResumeById(id: string, userId: string) {
   });
 }
 
-export async function createResume(userId: string, data: any) {
+export async function createResume(userId: string, data: Partial<ResumeData>) {
   return prisma.resume.create({
     data: {
       userId,
       title: data.title,
       isBase: data.isBase ?? true,
       template: data.template ?? 'modern',
-      fullName: data.fullName,
-      email: data.email,
+      fullName: data.fullName || '',
+      email: data.email || '',
       phone: data.phone,
       location: data.location,
       website: data.website,
@@ -43,7 +44,7 @@ export async function createResume(userId: string, data: any) {
       github: data.github,
       summary: data.summary,
       experiences: {
-        create: (data.experiences || []).map((exp: any, i: number) => ({
+        create: (data.experiences || []).map((exp: ExperienceData, i: number) => ({
           jobTitle: exp.jobTitle || "",
           company: exp.company || "",
           location: exp.location,
@@ -55,7 +56,7 @@ export async function createResume(userId: string, data: any) {
         })),
       },
       education: {
-        create: (data.education || []).map((edu: any, i: number) => ({
+        create: (data.education || []).map((edu: EducationData, i: number) => ({
           school: edu.school || "",
           degree: edu.degree || "",
           field: edu.field,
@@ -67,13 +68,13 @@ export async function createResume(userId: string, data: any) {
         })),
       },
       skills: {
-        create: (data.skills || []).map((s: any) => ({
+        create: (data.skills || []).map((s: SkillData) => ({
           name: s.name || "",
           category: s.category,
         })),
       },
       projects: {
-        create: (data.projects || []).map((proj: any, i: number) => ({
+        create: (data.projects || []).map((proj: ProjectData, i: number) => ({
           name: proj.name || "",
           description: proj.description || "",
           technologies: JSON.stringify(proj.technologies || []),
@@ -91,7 +92,7 @@ export async function createResume(userId: string, data: any) {
   });
 }
 
-export async function updateResume(id: string, userId: string, data: any) {
+export async function updateResume(id: string, userId: string, data: Partial<ResumeData>) {
   // Delete existing child records and recreate inside a transaction
   await prisma.$transaction([
     prisma.workExperience.deleteMany({ where: { resumeId: id } }),
@@ -114,7 +115,7 @@ export async function updateResume(id: string, userId: string, data: any) {
       github: data.github,
       summary: data.summary,
       experiences: {
-        create: (data.experiences || []).map((exp: any, i: number) => ({
+        create: (data.experiences || []).map((exp: ExperienceData, i: number) => ({
           jobTitle: exp.jobTitle || "",
           company: exp.company || "",
           location: exp.location,
@@ -126,7 +127,7 @@ export async function updateResume(id: string, userId: string, data: any) {
         })),
       },
       education: {
-        create: (data.education || []).map((edu: any, i: number) => ({
+        create: (data.education || []).map((edu: EducationData, i: number) => ({
           school: edu.school || "",
           degree: edu.degree || "",
           field: edu.field,
@@ -138,13 +139,13 @@ export async function updateResume(id: string, userId: string, data: any) {
         })),
       },
       skills: {
-        create: (data.skills || []).map((skill: any) => ({
+        create: (data.skills || []).map((skill: SkillData) => ({
           name: skill.name || "",
           category: skill.category,
         })),
       },
       projects: {
-        create: (data.projects || []).map((proj: any, i: number) => ({
+        create: (data.projects || []).map((proj: ProjectData, i: number) => ({
           name: proj.name || "",
           description: proj.description || "",
           technologies: JSON.stringify(proj.technologies || []),
@@ -170,8 +171,8 @@ export async function deleteResume(id: string, userId: string) {
 
 export async function createTailoredResume(
   userId: string,
-  baseResume: any,
-  tailoringResult: any,
+  baseResume: Partial<ResumeData>,
+  tailoringResult: TailoringResult,
   coverLetterText: string,
   jobTitle: string,
   companyName: string,
@@ -192,7 +193,7 @@ export async function createTailoredResume(
       github: tailoringResult.tailoredResume.github,
       summary: tailoringResult.tailoredResume.summary,
       experiences: {
-        create: (tailoringResult.tailoredResume.experiences || []).map((exp: any, i: number) => ({
+        create: (tailoringResult.tailoredResume.experiences || []).map((exp: ExperienceData, i: number) => ({
           jobTitle: exp.jobTitle || "",
           company: exp.company || "",
           location: exp.location,
@@ -204,7 +205,7 @@ export async function createTailoredResume(
         })),
       },
       education: {
-        create: (tailoringResult.tailoredResume.education || []).map((edu: any, i: number) => ({
+        create: (tailoringResult.tailoredResume.education || []).map((edu: EducationData, i: number) => ({
           school: edu.school || "",
           degree: edu.degree || "",
           field: edu.field,
@@ -216,13 +217,13 @@ export async function createTailoredResume(
         })),
       },
       skills: {
-        create: (tailoringResult.tailoredResume.skills || []).map((s: any) => ({
+        create: (tailoringResult.tailoredResume.skills || []).map((s: SkillData) => ({
           name: s.name || "",
           category: s.category,
         })),
       },
       projects: {
-        create: (tailoringResult.tailoredResume.projects || []).map((p: any, i: number) => ({
+        create: (tailoringResult.tailoredResume.projects || []).map((p: ProjectData, i: number) => ({
           name: p.name || "",
           description: p.description || "",
           technologies: JSON.stringify(p.technologies || []),

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { tailorResume } from '@/services/resume-service';
+import { addJobApplication } from '@/services/application-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,15 +30,12 @@ export async function POST(request: NextRequest) {
 
     // Automatically create a job application entry from the tailoring data
     try {
-      await prisma.jobApplication.create({
-        data: {
-          userId: session.user.id,
-          title: jobTitle,
-          company: companyName,
-          status: 'Applied',
-          resumeId: result.resume?.id || null,
-          notes: `Auto-tracked from resume tailoring. ATS Score: ${result.atsScore ?? 'N/A'}%`,
-        },
+      await addJobApplication(session.user.id, {
+        title: jobTitle,
+        company: companyName,
+        status: 'Applied',
+        resumeId: result.resume?.id || undefined,
+        notes: `Auto-tracked from resume tailoring. ATS Score: ${result.atsScore ?? 'N/A'}%`,
       });
     } catch (appError) {
       // Log but don't fail the tailoring response if application creation fails

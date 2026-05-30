@@ -9,18 +9,18 @@ import {
 import { ResumeData, TailoringResult } from '@/types/resume';
 
 // Helper to map DB resume format (which stores arrays as JSON strings in SQLite) to typed ResumeData
-function resumeToData(resume: any): ResumeData {
+function resumeToData(resume: Record<string, unknown>): ResumeData {
   return {
-    fullName: resume.fullName,
+    fullName: resume.fullName as string,
     email: resume.email,
     phone: resume.phone,
     location: resume.location,
     website: resume.website,
     linkedin: resume.linkedin,
     github: resume.github,
-    summary: resume.summary,
-    experiences: (resume.experiences || []).map((exp: any) => ({
-      jobTitle: exp.jobTitle,
+    summary: resume.summary as string | null,
+    experiences: ((resume.experiences as Record<string, unknown>[]) || []).map((exp) => ({
+      jobTitle: exp.jobTitle as string,
       company: exp.company,
       location: exp.location,
       startDate: exp.startDate,
@@ -29,10 +29,10 @@ function resumeToData(resume: any): ResumeData {
       achievements: typeof exp.achievements === 'string'
         ? JSON.parse(exp.achievements || '[]')
         : exp.achievements,
-      sortOrder: exp.sortOrder,
+      sortOrder: exp.sortOrder as number,
     })),
-    education: (resume.education || []).map((edu: any) => ({
-      school: edu.school,
+    education: ((resume.education as Record<string, unknown>[]) || []).map((edu) => ({
+      school: edu.school as string,
       degree: edu.degree,
       field: edu.field,
       location: edu.location,
@@ -41,9 +41,9 @@ function resumeToData(resume: any): ResumeData {
       gpa: edu.gpa,
       sortOrder: edu.sortOrder,
     })),
-    skills: (resume.skills || []).map((s: any) => ({ name: s.name, category: s.category })),
-    projects: (resume.projects || []).map((p: any) => ({
-      name: p.name,
+    skills: ((resume.skills as Record<string, unknown>[]) || []).map((s) => ({ name: s.name as string, category: s.category as string | null })),
+    projects: ((resume.projects as Record<string, unknown>[]) || []).map((p) => ({
+      name: p.name as string,
       description: p.description,
       technologies: typeof p.technologies === 'string'
         ? JSON.parse(p.technologies || '[]')
@@ -64,11 +64,11 @@ export async function getResume(id: string, userId: string) {
   return resume;
 }
 
-export async function createResume(userId: string, data: any) {
+export async function createResume(userId: string, data: Partial<ResumeData>) {
   return resumeDal.createResume(userId, data);
 }
 
-export async function updateResume(id: string, userId: string, data: any) {
+export async function updateResume(id: string, userId: string, data: Partial<ResumeData>) {
   return resumeDal.updateResume(id, userId, data);
 }
 

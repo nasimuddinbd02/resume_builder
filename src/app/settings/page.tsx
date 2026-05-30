@@ -376,18 +376,18 @@ export default function SettingsPage() {
                 <div className="p-5 border border-primary/20 bg-primary/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <h4 className="font-semibold text-primary flex items-center gap-2">
-                      {((session?.user as any)?.isPro) ? "Pro Plan" : "Basic Plan"}
+                      {((session?.user as { isPro?: boolean })?.isPro) ? "Pro Plan" : "Basic Plan"}
                       <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-xs text-primary font-bold tracking-wide uppercase">
-                        {((session?.user as any)?.isPro) ? "Active" : "Free"}
+                        {((session?.user as { isPro?: boolean })?.isPro) ? "Active" : "Free"}
                       </span>
                     </h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {((session?.user as any)?.isPro)
+                      {((session?.user as { isPro?: boolean })?.isPro)
                         ? "You are currently on the Pro plan with unlimited AI tailoring."
                         : "You are currently on the free basic plan. Upgrade to Pro for unlimited AI tailoring and premium templates."}
                     </p>
                   </div>
-                  {((session?.user as any)?.isPro) ? (
+                  {((session?.user as { isPro?: boolean })?.isPro) ? (
                     <Button 
                       variant="outline" 
                       className="shrink-0 gap-2" 
@@ -412,7 +412,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Payment Methods</h4>
                   <div className="text-sm text-muted-foreground border border-border/50 rounded-lg p-6 text-center bg-card/30">
-                    {((session?.user as any)?.isPro)
+                    {((session?.user as { isPro?: boolean })?.isPro)
                       ? "Manage your payment methods in the Stripe billing portal."
                       : "No payment methods on file."}
                   </div>

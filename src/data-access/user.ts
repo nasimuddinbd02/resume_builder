@@ -18,3 +18,29 @@ export async function findUserById(id: string) {
     where: { id },
   });
 }
+
+export async function updateUserById(id: string, data: Prisma.UserUpdateInput) {
+  return prisma.user.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function getUserByStripeCustomerId(stripeCustomerId: string) {
+  return prisma.user.findUnique({
+    where: { stripeCustomerId },
+  });
+}
+
+export async function updateStripeSubscription(stripeSubscriptionId: string, data: Prisma.UserUpdateInput) {
+  return prisma.user.updateMany({
+    where: { stripeSubscriptionId },
+    data,
+  });
+}
+
+export async function getUserByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+  });
+}

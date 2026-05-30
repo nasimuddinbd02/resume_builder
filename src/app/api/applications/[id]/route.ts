@@ -1,10 +1,9 @@
 // src/app/api/applications/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { fetchUserApplication, modifyJobApplication, removeJobApplication } from '@/services/application-service';
 import { z } from 'zod';
 
-// Schema for updating a job application
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
   company: z.string().min(1).optional(),
@@ -21,9 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const application = await prisma.jobApplication.findUnique({
-    where: { id, userId: session.user.id },
-  });
+  const application = await fetchUserApplication(id, session.user.id);
   if (!application) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(application);
 }
@@ -38,23 +35,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const body = await request.json();
     const data = updateSchema.parse(body);
-    const updated = await prisma.jobApplication.update({
-      where: { id, userId: session.user.id },
-      data: {
-        ...(data.title && { title: data.title }),
-        ...(data.company && { company: data.company }),
-        ...(data.link !== undefined && { link: data.link ?? undefined }),
-        ...(data.status && { status: data.status }),
-        ...(data.notes !== undefined && { notes: data.notes ?? undefined }),
-        ...(data.resumeId !== undefined && {
-          resume: data.resumeId ? { connect: { id: data.resumeId } } : { disconnect: true },
-        }),
-      },
+    const updated = await modifyJobApplication(id, session.user.id, {
+      title: data.title,
+      company: data.company,
+      link: data.link || undefined,
+      status: data.status,
+      notes: data.notes || undefined,
+      resumeId: data.resumeId || undefined,
     });
     return NextResponse.json(updated);
-  } catch (error) {
+    } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
     console.error('Update job application error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -68,9 +60,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    await prisma.jobApplication.delete({
-      where: { id, userId: session.user.id },
-    });
+    await removeJobApplication(id, session.user.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete job application error:', error);

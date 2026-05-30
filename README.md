@@ -20,7 +20,7 @@ A feature-rich, Next.js 16 application designed to construct base resumes, parse
 
 ## 🏗️ System Architecture
 
-The application is structured into an **N-Tier Architecture**, decoupling client-side user interfaces, server route controllers, business logic service classes, and data access layers.
+The application is strictly structured into an **N-Tier Architecture**, decoupling client-side user interfaces, server route controllers, business logic service classes, and data access layers to ensure maintainability and separation of concerns.
 
 ### Visual Architecture
 
@@ -29,17 +29,21 @@ graph TD
     subgraph Client ["Client Side (Next.js Client Components)"]
         UI["UI Views / Forms<br>(Editor, Tailor Dashboard, App Tracker)"]
         ClientAuth["NextAuth client-side sessions"]
-        Exporters["Document Exporters<br>(html2pdf.js + html2canvas-pro)"]
+        Exporters["Document Exporters<br>(html2pdf.js)"]
     end
 
-    subgraph Server ["Server Side (Next.js App Router API & Services)"]
-        API["API Route Handlers<br>(/api/resume, /api/tailor, /api/applications)"]
+    subgraph Server ["Server Side (Next.js App Router)"]
+        API["API Route Controllers<br>(/api/resume, /api/tailor, /api/applications)"]
         Middleware["NextAuth Proxy middleware"]
-        ServiceLayer["Service Layer<br>(Resume Service, Tailor Service)"]
+    end
+    
+    subgraph Core ["Core Business & Data Layer"]
+        ServiceLayer["Service Layer<br>(resume-service.ts, application-service.ts, stripe-service.ts)"]
+        DataAccessLayer["Data Access Layer<br>(resume.ts, user.ts, application.ts)"]
         AIProvider["AI Provider Factory<br>(gemini, openai, claude, groq)"]
     end
 
-    subgraph External ["External Layer & Storage"]
+    subgraph External ["External Services & Storage"]
         DB["SQLite Database<br>(Prisma ORM)"]
         StripeAPI["Stripe API<br>(Subscriptions)"]
         LLM["LLM APIs"]
@@ -50,9 +54,10 @@ graph TD
     ClientAuth --> API
     API --> Middleware
     Middleware --> ServiceLayer
-    ServiceLayer --> DB
+    ServiceLayer --> DataAccessLayer
     ServiceLayer --> StripeAPI
     ServiceLayer --> AIProvider
+    DataAccessLayer --> DB
     AIProvider --> LLM
 ```
 

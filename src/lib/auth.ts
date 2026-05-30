@@ -1,7 +1,7 @@
 import { AuthOptions, getServerSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { validateUserCredentials } from '@/services/user-service';
-import { prisma } from '@/lib/prisma';
+import { getUserByEmail, findUserById } from '@/data-access/user';
+import bcrypt from 'bcryptjs';
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,10 +13,18 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        return validateUserCredentials(
-          credentials.email as string,
-          credentials.password as string
+        
+        const user = await getUserByEmail(credentials.email as string);
+        if (!user || !user.hashedPassword) return null;
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password as string,
+          user.hashedPassword
         );
+
+        if (!isPasswordValid) return null;
+
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],
@@ -35,13 +43,10 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
+        (session.user as { id?: string; isPro?: boolean }).id = token.id as string;
         
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { stripePriceId: true, stripeCurrentPeriodEnd: true }
-          });
+          const dbUser = await findUserById(token.id as string);
           
           const isPro = Boolean(
             dbUser?.stripePriceId &&
@@ -49,9 +54,9 @@ export const authOptions: AuthOptions = {
             dbUser.stripeCurrentPeriodEnd.getTime() + 86400000 > Date.now()
           );
           
-          (session.user as any).isPro = isPro;
-        } catch (e) {
-          (session.user as any).isPro = false;
+          (session.user as { id?: string; isPro?: boolean }).isPro = isPro;
+        } catch (e: unknown) {
+          (session.user as { id?: string; isPro?: boolean }).isPro = false;
         }
       }
       return session;

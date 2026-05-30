@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const user = await registerUser(name, email, password);
 
     return NextResponse.json({ user }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0].message },
