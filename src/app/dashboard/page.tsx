@@ -172,9 +172,9 @@ export default function DashboardPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="max-w-7xl mx-auto px-6 py-10">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
           <Skeleton className="h-10 w-64 mb-2" />
           <Skeleton className="h-5 w-48 mb-10" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -188,9 +188,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>

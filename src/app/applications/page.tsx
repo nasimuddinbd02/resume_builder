@@ -171,10 +171,10 @@ export default function ApplicationsPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="max-w-7xl mx-auto px-6 py-10">
-          <Skeleton className="h-10 w-64 mb-2" />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
+          <Skeleton className="h-10 w-48 mb-6" />
           <Skeleton className="h-5 w-48 mb-10" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -187,9 +187,9 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
         {/* Header — same pattern as Dashboard */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold mb-1">

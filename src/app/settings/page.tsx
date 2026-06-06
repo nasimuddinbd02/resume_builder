@@ -151,19 +151,20 @@ export default function SettingsPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="max-w-4xl mx-auto px-6 py-10 flex flex-col items-center justify-center">
+        <main className="flex-1 max-w-4xl mx-auto px-6 py-10 flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="flex-1 max-w-4xl mx-auto px-6 py-10">
         <div className="flex items-center gap-2.5 mb-8">
           <div className="p-2 rounded-lg bg-primary/10">
             <Settings className="w-6 h-6 text-primary animate-pulse" />
