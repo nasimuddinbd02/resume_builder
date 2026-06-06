@@ -37,6 +37,8 @@ import {
   Loader2,
   LineChart,
   Briefcase,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
 import ResumeUploader from "@/components/upload/ResumeUploader";
@@ -64,6 +66,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [tailoredViewMode, setTailoredViewMode] = useState<"grid" | "table">("grid");
 
   const fetchResumes = useCallback(async () => {
     try {
@@ -364,76 +367,169 @@ export default function DashboardPage() {
         {tailoredResumes.length > 0 && (
           <section>
             <Separator className="mb-8" />
-            <div className="flex items-center gap-2 mb-6">
-              <Target className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Tailored Resumes</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-              {tailoredResumes.map((resume) => (
-                <Card
-                  key={resume.id}
-                  className="glass-card border-border/50 card-hover group"
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-semibold">Tailored Resumes</h2>
+              </div>
+              
+              <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg">
+                <Button 
+                  variant={tailoredViewMode === "grid" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`px-3 py-1.5 h-auto ${tailoredViewMode === "grid" ? "shadow-sm" : ""}`}
+                  onClick={() => setTailoredViewMode("grid")}
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg truncate">
-                          {resume.title}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-1 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(resume.updatedAt)}
-                        </CardDescription>
-                      </div>
-                      {resume.tailoring?.atsScore != null && (
-                        <Badge
-                          className={`shrink-0 ${
-                            resume.tailoring.atsScore >= 70
-                              ? "bg-success/15 text-success"
-                              : resume.tailoring.atsScore >= 40
-                              ? "bg-warning/15 text-warning"
-                              : "bg-destructive/15 text-destructive"
-                          }`}
-                        >
-                          ATS: {resume.tailoring.atsScore}%
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4 truncate">
-                      {resume.tailoring?.companyName} &middot;{" "}
-                      {resume.tailoring?.jobTitle}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Link href={`/builder/${resume.id}`} className="flex-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full gap-1"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                          View
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(resume.id)}
-                        disabled={deletingId === resume.id}
-                      >
-                        {deletingId === resume.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  <LayoutGrid className="w-4 h-4 mr-1.5" />
+                  Grid
+                </Button>
+                <Button 
+                  variant={tailoredViewMode === "table" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`px-3 py-1.5 h-auto ${tailoredViewMode === "table" ? "shadow-sm" : ""}`}
+                  onClick={() => setTailoredViewMode("table")}
+                >
+                  <List className="w-4 h-4 mr-1.5" />
+                  List
+                </Button>
+              </div>
             </div>
+
+            {tailoredViewMode === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+                {tailoredResumes.map((resume) => (
+                  <Card
+                    key={resume.id}
+                    className="glass-card border-border/50 card-hover group"
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg truncate">
+                            {resume.title}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-1 mt-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(resume.updatedAt)}
+                          </CardDescription>
+                        </div>
+                        {resume.tailoring?.atsScore != null && (
+                          <Badge
+                            className={`shrink-0 ${
+                              resume.tailoring.atsScore >= 70
+                                ? "bg-success/15 text-success"
+                                : resume.tailoring.atsScore >= 40
+                                ? "bg-warning/15 text-warning"
+                                : "bg-destructive/15 text-destructive"
+                            }`}
+                          >
+                            ATS: {resume.tailoring.atsScore}%
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4 truncate">
+                        {resume.tailoring?.companyName} &middot;{" "}
+                        {resume.tailoring?.jobTitle}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/builder/${resume.id}`} className="flex-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-1"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            View
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(resume.id)}
+                          disabled={deletingId === resume.id}
+                        >
+                          {deletingId === resume.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card border border-border/50 rounded-xl overflow-hidden fade-in-up">
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-secondary/50 text-secondary-foreground border-b border-border/50">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Resume Title</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Job Target</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">ATS Score</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Last Updated</th>
+                        <th className="px-6 py-4 font-semibold text-right whitespace-nowrap">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {tailoredResumes.map((resume) => (
+                        <tr key={resume.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-semibold text-foreground">{resume.title}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium">{resume.tailoring?.companyName}</div>
+                            <div className="text-muted-foreground mt-0.5 text-xs">{resume.tailoring?.jobTitle}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {resume.tailoring?.atsScore != null ? (
+                              <Badge
+                                className={`border-none shadow-none ${
+                                  resume.tailoring.atsScore >= 70
+                                    ? "bg-success/15 text-success"
+                                    : resume.tailoring.atsScore >= 40
+                                    ? "bg-warning/15 text-warning"
+                                    : "bg-destructive/15 text-destructive"
+                                }`}
+                              >
+                                {resume.tailoring.atsScore}%
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">N/A</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+                            {formatDate(resume.updatedAt)}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link href={`/builder/${resume.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(resume.id)}
+                                disabled={deletingId === resume.id}
+                              >
+                                {deletingId === resume.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </main>
