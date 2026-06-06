@@ -72,6 +72,7 @@ export default function BuilderPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState("resume");
 
   const signatureText = resumeData ? `\n\nBest regards,\n\n${resumeData.fullName || "Nasim Uddin"}\nPhone: ${resumeData.phone || "+1 (408) 489-8765"}\nEmail: ${resumeData.email || "nasim.uddinbd02@gmail.com"}\nLinkedIn: ${resumeData.linkedin || "https://www.linkedin.com/in/nasim-uddin/"}` : "";
   const fullCoverLetterText = resumeData?.tailoring?.coverLetterText 
@@ -299,7 +300,7 @@ export default function BuilderPage({
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      onClick={handleExportPDF}
+                      onClick={activeTab === "resume" ? handleExportPDF : handleExportCoverLetterPDF}
                     />
                   }
                 >
@@ -316,7 +317,7 @@ export default function BuilderPage({
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      onClick={handleExportDOCX}
+                      onClick={activeTab === "resume" ? handleExportDOCX : handleExportCoverLetterDOCX}
                     />
                   }
                 >
@@ -325,6 +326,25 @@ export default function BuilderPage({
                 </TooltipTrigger>
                 <TooltipContent>Download as Word Document</TooltipContent>
               </Tooltip>
+
+              {activeTab === "cover-letter" && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-primary border-primary/20 hover:bg-primary/10"
+                        onClick={handleCopyCoverLetter}
+                      />
+                    }
+                  >
+                    {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {isCopied ? "Copied!" : "Copy"}
+                  </TooltipTrigger>
+                  <TooltipContent>Copy Cover Letter text</TooltipContent>
+                </Tooltip>
+              )}
 
 <Tooltip>
    <TooltipTrigger
@@ -481,7 +501,7 @@ export default function BuilderPage({
           {/* Preview panel */}
           <div className="glass-card rounded-xl border border-border/50 overflow-hidden flex flex-col">
             {!resumeData.isBase && resumeData.tailoring?.coverLetterText ? (
-              <Tabs defaultValue="resume" className="flex flex-col h-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
                 <div className="px-4 border-b border-border/50 flex items-center justify-between bg-secondary/20">
                   <TabsList className="bg-transparent h-12 p-0 space-x-4">
                     <TabsTrigger 
@@ -513,20 +533,6 @@ export default function BuilderPage({
                 
                 <TabsContent value="cover-letter" className="m-0 p-6 max-h-[calc(100vh-220px)] overflow-y-auto flex-1 bg-background/50">
                   <div className="max-w-3xl mx-auto">
-                    <div className="flex justify-end gap-2 mb-4 flex-wrap">
-                      <Button variant="outline" size="sm" onClick={handleExportCoverLetterDOCX} className="gap-2">
-                        <Download className="w-4 h-4" />
-                        Word
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleExportCoverLetterPDF} className="gap-2">
-                        <Download className="w-4 h-4" />
-                        PDF
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleCopyCoverLetter} className="gap-2">
-                        {isCopied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                        {isCopied ? "Copied!" : "Copy"}
-                      </Button>
-                    </div>
                     <div id="cover-letter-preview" className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
                       {fullCoverLetterText}
                     </div>
