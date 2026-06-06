@@ -57,7 +57,7 @@ export function Navbar() {
   const userImage = session?.user?.image;
 
   return (
-    <nav className="sticky top-0 z-50 glass-card border-b border-border/50">
+    <nav className="sticky top-0 z-50 bg-background border-b border-border/50">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2 group">
