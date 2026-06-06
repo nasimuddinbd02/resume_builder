@@ -64,6 +64,10 @@ export default function SettingsPage() {
   // Danger Zone State
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Real Device Info
+  const [deviceInfo, setDeviceInfo] = useState("Loading Device Info...");
+  const [deviceIcon, setDeviceIcon] = useState<React.ReactNode>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -80,6 +84,41 @@ export default function SettingsPage() {
     const savedApiKey = localStorage.getItem("ai_api_key");
     if (savedProvider) setAiProvider(savedProvider);
     if (savedApiKey) setAiApiKey(savedApiKey);
+    
+    // Load Notification Preferences
+    const storedJobMatches = localStorage.getItem("notifyJobMatches");
+    if (storedJobMatches !== null) setNotifyJobMatches(storedJobMatches === "true");
+    const storedAppStatus = localStorage.getItem("notifyAppStatus");
+    if (storedAppStatus !== null) setNotifyAppStatus(storedAppStatus === "true");
+    const storedProductUpdates = localStorage.getItem("notifyProductUpdates");
+    if (storedProductUpdates !== null) setNotifyProductUpdates(storedProductUpdates === "true");
+
+    // Parse real user agent for Active Sessions
+    if (typeof window !== "undefined") {
+      const ua = window.navigator.userAgent;
+      
+      let browser = "Unknown Browser";
+      if (ua.includes("Firefox")) browser = "Firefox";
+      else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
+      else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+      else if (ua.includes("Trident")) browser = "Internet Explorer";
+      else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
+      else if (ua.includes("Chrome")) browser = "Chrome";
+      else if (ua.includes("Safari")) browser = "Safari";
+
+      let os = "Unknown OS";
+      let isMobile = false;
+      if (ua.includes("Win")) os = "Windows";
+      else if (ua.includes("Mac")) os = "macOS";
+      else if (ua.includes("X11")) os = "UNIX";
+      else if (ua.includes("Linux")) os = "Linux";
+      if (ua.includes("Android")) { os = "Android"; isMobile = true; }
+      if (ua.includes("iPhone") || ua.includes("iPad")) { os = "iOS"; isMobile = true; }
+
+      setDeviceInfo(`${os} - ${browser}`);
+      setDeviceIcon(isMobile ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />);
+    }
+
   }, [status, session, router]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -170,7 +209,27 @@ export default function SettingsPage() {
   };
 
   const handleExportData = () => {
-    toast.success("Data export started. You will receive an email shortly.");
+    const data = {
+      profile: session?.user || {},
+      settings: {
+        aiProvider,
+        notifyJobMatches,
+        notifyAppStatus,
+        notifyProductUpdates,
+      },
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `resume_builder_export_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Data export downloaded successfully.");
   };
 
   const handleDeleteAccount = (e: React.FormEvent) => {
@@ -187,6 +246,9 @@ export default function SettingsPage() {
   };
 
   const handleSaveNotifications = () => {
+    localStorage.setItem("notifyJobMatches", notifyJobMatches.toString());
+    localStorage.setItem("notifyAppStatus", notifyAppStatus.toString());
+    localStorage.setItem("notifyProductUpdates", notifyProductUpdates.toString());
     toast.success("Notification preferences saved successfully.");
   };
 
@@ -381,28 +443,16 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between p-4 border border-primary/20 bg-primary/5 rounded-xl">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-background rounded-lg text-primary">
-                          <Laptop className="w-5 h-5" />
+                          {deviceIcon || <Monitor className="w-5 h-5" />}
                         </div>
                         <div>
-                          <p className="font-semibold text-sm">MacBook Pro - Chrome</p>
-                          <p className="text-xs text-muted-foreground">San Francisco, CA &middot; Active Now</p>
+                          <p className="font-semibold text-sm">{deviceInfo}</p>
+                          <p className="text-xs text-muted-foreground">Current IP &middot; Active Now</p>
                         </div>
                       </div>
                       <Badge variant="secondary" className="bg-success/15 text-success border-none text-xs">
                         This Device
                       </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 border border-border/50 bg-card/30 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-background rounded-lg text-muted-foreground">
-                          <Smartphone className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm">iPhone 14 Pro - Safari</p>
-                          <p className="text-xs text-muted-foreground">San Francisco, CA &middot; 2 hours ago</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                   
