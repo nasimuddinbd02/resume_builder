@@ -238,6 +238,7 @@ export function exportToDOCX(
         h2 { font-size: 13pt; font-weight: bold; border-bottom: 1.5pt solid #7c3aed; padding-bottom: 2pt; text-transform: uppercase; }
         h3 { font-size: 11pt; font-weight: bold; }
         p, ul, li { margin-top: 0; margin-bottom: 6pt; }
+        .summary-text { text-align: justify; }
         ul { margin-left: 10pt; padding-left: 0; }
         li { list-style-type: disc; }
         table { border-collapse: collapse; width: 100%; }

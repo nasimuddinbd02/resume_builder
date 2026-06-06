@@ -101,6 +101,7 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
           </h1>
           {data.summary && (
             <p
+              className="summary-text"
               style={{
                 fontSize: '0.68rem',
                 color: '#666',

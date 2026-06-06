@@ -295,6 +295,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
               Professional Summary
             </h2>
             <p
+              className="summary-text"
               style={{
                 fontSize: '0.78rem',
                 lineHeight: 1.55,

@@ -108,6 +108,7 @@ export default function ExecutiveTemplate({ data, id }: ExecutiveTemplateProps) 
         <section>
           <h2 style={sectionHeaderStyle}>Professional Summary</h2>
           <p
+            className="summary-text"
             style={{
               fontSize: '0.82rem',
               lineHeight: 1.6,
