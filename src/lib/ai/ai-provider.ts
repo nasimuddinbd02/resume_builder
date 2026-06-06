@@ -1,24 +1,43 @@
 import { headers } from 'next/headers';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+export interface AIFile {
+  data: string; // base64 string
+  mimeType: string;
+}
+
 export interface AIProvider {
-  generateText(prompt: string): Promise<string>;
-  generateJSON<T>(prompt: string): Promise<T>;
+  generateText(prompt: string, file?: AIFile): Promise<string>;
+  generateJSON<T>(prompt: string, file?: AIFile): Promise<T>;
 }
 
 // 1. Google Gemini Provider
 class GeminiProvider implements AIProvider {
   constructor(private apiKey: string) {}
 
-  async generateText(prompt: string): Promise<string> {
+  async generateText(prompt: string, file?: AIFile): Promise<string> {
     const genAI = new GoogleGenerativeAI(this.apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    const result = await model.generateContent(prompt);
+    
+    let contentInput: any = prompt;
+    if (file) {
+      contentInput = [
+        {
+          inlineData: {
+            data: file.data,
+            mimeType: file.mimeType,
+          },
+        },
+        prompt,
+      ];
+    }
+    
+    const result = await model.generateContent(contentInput);
     return result.response.text();
   }
 
-  async generateJSON<T>(prompt: string): Promise<T> {
-    const text = await this.generateText(prompt);
+  async generateJSON<T>(prompt: string, file?: AIFile): Promise<T> {
+    const text = await this.generateText(prompt, file);
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     const jsonString = jsonMatch ? jsonMatch[1].trim() : text.trim();
     return JSON.parse(jsonString) as T;
@@ -29,7 +48,7 @@ class GeminiProvider implements AIProvider {
 class OpenAIProvider implements AIProvider {
   constructor(private apiKey: string, private model: string) {}
 
-  async generateText(prompt: string): Promise<string> {
+  async generateText(prompt: string, file?: AIFile): Promise<string> {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -51,7 +70,7 @@ class OpenAIProvider implements AIProvider {
     return data.choices[0].message.content;
   }
 
-  async generateJSON<T>(prompt: string): Promise<T> {
+  async generateJSON<T>(prompt: string, file?: AIFile): Promise<T> {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -80,7 +99,7 @@ class OpenAIProvider implements AIProvider {
 class ClaudeProvider implements AIProvider {
   constructor(private apiKey: string, private model: string) {}
 
-  async generateText(prompt: string): Promise<string> {
+  async generateText(prompt: string, file?: AIFile): Promise<string> {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -104,8 +123,8 @@ class ClaudeProvider implements AIProvider {
     return data.content[0].text;
   }
 
-  async generateJSON<T>(prompt: string): Promise<T> {
-    const text = await this.generateText(prompt);
+  async generateJSON<T>(prompt: string, file?: AIFile): Promise<T> {
+    const text = await this.generateText(prompt, file);
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     const jsonString = jsonMatch ? jsonMatch[1].trim() : text.trim();
     return JSON.parse(jsonString) as T;
@@ -116,7 +135,7 @@ class ClaudeProvider implements AIProvider {
 class GroqProvider implements AIProvider {
   constructor(private apiKey: string, private model: string) {}
 
-  async generateText(prompt: string): Promise<string> {
+  async generateText(prompt: string, file?: AIFile): Promise<string> {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -138,7 +157,7 @@ class GroqProvider implements AIProvider {
     return data.choices[0].message.content;
   }
 
-  async generateJSON<T>(prompt: string): Promise<T> {
+  async generateJSON<T>(prompt: string, file?: AIFile): Promise<T> {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

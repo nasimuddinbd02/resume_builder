@@ -157,6 +157,13 @@ export default function DashboardPage() {
           ...parsedData,
           title: "Uploaded Resume",
           isBase: true,
+          template: parsedData.template || JSON.stringify({
+            name: "custom",
+            accentColor: "#1f2937",
+            fontFamily: "Inter",
+            fontSize: "0.8rem",
+            padding: "0.5in 0.6in"
+          }),
         }),
       });
 

@@ -14,6 +14,8 @@ import {
   Mail,
   Download,
   Loader2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +47,8 @@ export default function TailorPage({
   const [role, setRole] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isTailoring, setIsTailoring] = useState(false);
+  const [activeTab, setActiveTab] = useState("resume");
+  const [isCopied, setIsCopied] = useState(false);
 
   const fetchResume = useCallback(async () => {
     try {
@@ -225,6 +229,52 @@ export default function TailorPage({
     }
   }
 
+  async function handleExportCoverLetterPDF() {
+    const { exportToPDF } = await import("@/lib/pdf-export");
+    try {
+      await exportToPDF(
+        "cover-letter-preview",
+        `${baseResume?.fullName || "resume"}-cover-letter.pdf`
+      );
+      toast.success("Cover Letter PDF downloaded!");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to export PDF");
+    }
+  }
+
+  async function handleExportCoverLetterDOCX() {
+    const { exportToDOCX } = await import("@/lib/pdf-export");
+    try {
+      exportToDOCX(
+        "cover-letter-preview",
+        `${baseResume?.fullName || "resume"}-cover-letter.doc`
+      );
+      toast.success("Cover Letter Word document downloaded!");
+    } catch (err) {
+      console.error("Word export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to export Word document");
+    }
+  }
+
+  function handleCopyCoverLetter() {
+    const cleanCoverLetterText = (text: string): string => {
+      if (!text) return "";
+      const signOffRegex = /(?:\r?\n)+(?:Sincerely|Warm(?:est)?\s+regards|Best\s+regards|Regards|Yours\s+truly|Yours\s+sincerely|Respectfully|Kind\s+regards|With\s+best\s+regards|Best\s+wishes|Warmly|Best\s*,|Best\s*[\r\n]),?[\s\S]*$/i;
+      return text.replace(signOffRegex, "").trim();
+    };
+    const signatureText = baseResume ? `\n\nBest regards,\n\n${baseResume.fullName || "Nasim Uddin"}\nPhone: ${baseResume.phone || "+1 (408) 489-8765"}\nEmail: ${baseResume.email || "nasim.uddinbd02@gmail.com"}\nLinkedIn: ${baseResume.linkedin || "https://www.linkedin.com/in/nasim-uddin/"}` : "";
+    const cleanedText = coverLetterText ? cleanCoverLetterText(coverLetterText) : "";
+    const fullCoverLetterText = cleanedText ? `${cleanedText}${signatureText}` : "";
+
+    if (fullCoverLetterText) {
+      navigator.clipboard.writeText(fullCoverLetterText);
+      setIsCopied(true);
+      toast.success("Cover letter copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen">
@@ -285,7 +335,7 @@ export default function TailorPage({
           {/* Right: Results */}
           <div className="glass-card rounded-xl border border-border/50 overflow-hidden">
             {tailoredResume ? (
-              <Tabs defaultValue="resume">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                 <div className="px-4 pt-3 border-b border-border/50 flex items-center justify-between">
                   <TabsList className="bg-transparent">
                     <TabsTrigger value="resume" className="gap-1.5 text-xs">
@@ -297,12 +347,23 @@ export default function TailorPage({
                       Cover Letter
                     </TabsTrigger>
                   </TabsList>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    {activeTab === "cover" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-primary border-primary/20 hover:bg-primary/10"
+                        onClick={handleCopyCoverLetter}
+                      >
+                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {isCopied ? "Copied!" : "Copy"}
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      onClick={handleExportPDF}
+                      onClick={activeTab === "resume" ? handleExportPDF : handleExportCoverLetterPDF}
                     >
                       <Download className="w-3.5 h-3.5" />
                       PDF
@@ -311,7 +372,7 @@ export default function TailorPage({
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      onClick={handleExportDOCX}
+                      onClick={activeTab === "resume" ? handleExportDOCX : handleExportCoverLetterDOCX}
                     >
                       <Download className="w-3.5 h-3.5" />
                       Word
@@ -325,7 +386,7 @@ export default function TailorPage({
                       <div className="transform scale-[0.55] origin-top">
                         <ResumePreview
                           data={tailoredResume}
-                          template={baseResume?.template || "modern"}
+                          template={tailoredResume?.template || baseResume?.template || "modern"}
                           id="resume-preview"
                         />
                       </div>
@@ -333,11 +394,25 @@ export default function TailorPage({
                   </TabsContent>
 
                   <TabsContent value="cover" className="mt-0">
-                    <CoverLetterView
-                      text={coverLetterText}
-                      jobTitle={jobTitle}
-                      companyName={companyName}
-                    />
+                    {(() => {
+                      const cleanCoverLetter = (text: string): string => {
+                        if (!text) return "";
+                        const signOffRegex = /(?:\r?\n)+(?:Sincerely|Warm(?:est)?\s+regards|Best\s+regards|Regards|Yours\s+truly|Yours\s+sincerely|Respectfully|Kind\s+regards|With\s+best\s+regards|Best\s+wishes|Warmly|Best\s*,|Best\s*[\r\n]),?[\s\S]*$/i;
+                        return text.replace(signOffRegex, "").trim();
+                      };
+                      const signatureText = baseResume ? `\n\nBest regards,\n\n${baseResume.fullName || "Nasim Uddin"}\nPhone: ${baseResume.phone || "+1 (408) 489-8765"}\nEmail: ${baseResume.email || "nasim.uddinbd02@gmail.com"}\nLinkedIn: ${baseResume.linkedin || "https://www.linkedin.com/in/nasim-uddin/"}` : "";
+                      const cleanedText = coverLetterText ? cleanCoverLetter(coverLetterText) : "";
+                      const fullCoverLetterText = cleanedText ? `${cleanedText}${signatureText}` : "";
+                      
+                      return (
+                        <CoverLetterView
+                          text={fullCoverLetterText}
+                          jobTitle={jobTitle}
+                          companyName={companyName}
+                          hideActions={true}
+                        />
+                      );
+                    })()}
                   </TabsContent>
                 </div>
               </Tabs>

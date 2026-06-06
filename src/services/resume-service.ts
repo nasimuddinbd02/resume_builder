@@ -133,10 +133,21 @@ export async function parseResumeFile(file: File) {
   // Stage 1: Extract raw text from file
   const { text, fileName } = await extractResumeText(file);
 
-  // Stage 2: Parse plain text to JSON structure using Configured AI
+  // Stage 2: Read file as base64 for visual layout parsing by multimodal models (e.g. Gemini)
+  let fileData = undefined;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+    fileData = { data: base64, mimeType };
+  } catch (err) {
+    console.error('Failed to read file as base64 buffer:', err);
+  }
+
+  // Stage 3: Parse plain text to JSON structure using Configured AI
   const prompt = getParseResumePrompt(text);
   const ai = await getAIProvider();
-  const parsedData = await ai.generateJSON<ResumeData>(prompt);
+  const parsedData = await ai.generateJSON<ResumeData>(prompt, fileData);
 
   return {
     parsedData,

@@ -4,6 +4,7 @@ import { ResumeData } from '@/types/resume';
 import ModernTemplate from '@/components/templates/ModernTemplate';
 import ExecutiveTemplate from '@/components/templates/ExecutiveTemplate';
 import MinimalTemplate from '@/components/templates/MinimalTemplate';
+import CustomTemplate from '@/components/templates/CustomTemplate';
 
 interface ResumePreviewProps {
   data: ResumeData;
@@ -17,11 +18,26 @@ export default function ResumePreview({
   id,
 }: ResumePreviewProps) {
   const renderTemplate = () => {
-    switch (template) {
+    let templateName = template;
+    let customStyles = null;
+
+    if (template && template.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(template);
+        templateName = parsed.name || 'custom';
+        customStyles = parsed;
+      } catch (e) {
+        console.error('Failed to parse template JSON:', e);
+      }
+    }
+
+    switch (templateName) {
       case 'executive':
         return <ExecutiveTemplate data={data} id={id} />;
       case 'minimal':
         return <MinimalTemplate data={data} id={id} />;
+      case 'custom':
+        return <CustomTemplate data={data} id={id} customStyles={customStyles} />;
       case 'modern':
       default:
         return <ModernTemplate data={data} id={id} />;

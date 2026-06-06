@@ -10,12 +10,14 @@ interface CoverLetterViewProps {
   text: string;
   jobTitle?: string;
   companyName?: string;
+  hideActions?: boolean;
 }
 
 export default function CoverLetterView({
   text,
   jobTitle,
   companyName,
+  hideActions = false,
 }: CoverLetterViewProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -74,41 +76,43 @@ export default function CoverLetterView({
   return (
     <div className="flex flex-col gap-3">
       {/* Action buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleCopy}
-          className="gap-1.5"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-green-400" />
-          ) : (
-            <ClipboardCopy className="h-3.5 w-3.5" />
-          )}
-          {copied ? 'Copied!' : 'Copy to Clipboard'}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleDownload}
-          disabled={downloading}
-          className="gap-1.5"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download PDF
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleDownloadDOCX}
-          disabled={downloading}
-          className="gap-1.5"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download Word
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleCopy}
+            className="gap-1.5"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-green-400" />
+            ) : (
+              <ClipboardCopy className="h-3.5 w-3.5" />
+            )}
+            {copied ? 'Copied!' : 'Copy to Clipboard'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download PDF
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleDownloadDOCX}
+            disabled={downloading}
+            className="gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download Word
+          </Button>
+        </div>
+      )}
 
       {/* Letter document */}
       <div className="overflow-hidden rounded-lg border border-border bg-muted/30 shadow-lg" style={{ width: '100%' }}>
@@ -159,6 +163,7 @@ export default function CoverLetterView({
                   color: '#333',
                   marginBottom: '0.8rem',
                   textAlign: 'justify',
+                  whiteSpace: 'pre-wrap',
                 }}
               >
                 {para}

@@ -184,28 +184,35 @@ export async function createTailoredResume(
       title: `Tailored for ${companyName} - ${jobTitle}`,
       isBase: false,
       template: baseResume.template,
-      fullName: tailoringResult.tailoredResume.fullName,
-      email: tailoringResult.tailoredResume.email,
-      phone: tailoringResult.tailoredResume.phone,
-      location: tailoringResult.tailoredResume.location,
-      website: tailoringResult.tailoredResume.website,
-      linkedin: tailoringResult.tailoredResume.linkedin,
-      github: tailoringResult.tailoredResume.github,
-      summary: tailoringResult.tailoredResume.summary,
+      fullName: baseResume.fullName,
+      email: baseResume.email,
+      phone: baseResume.phone,
+      location: baseResume.location,
+      website: baseResume.website,
+      linkedin: baseResume.linkedin,
+      github: baseResume.github,
+      summary: baseResume.summary,
       experiences: {
-        create: (tailoringResult.tailoredResume.experiences || []).map((exp: ExperienceData, i: number) => ({
-          jobTitle: exp.jobTitle || "",
-          company: exp.company || "",
-          location: exp.location,
-          startDate: exp.startDate || "",
-          endDate: exp.endDate,
-          isCurrent: exp.isCurrent || false,
-          achievements: JSON.stringify(exp.achievements || []),
-          sortOrder: i,
-        })),
+        create: (baseResume.experiences || []).map((exp: any, i: number) => {
+          const tailoredExp = (tailoringResult.tailoredResume?.experiences || [])[i];
+          const achievements = tailoredExp?.achievements
+            ? JSON.stringify(tailoredExp.achievements)
+            : exp.achievements;
+          
+          return {
+            jobTitle: exp.jobTitle || "",
+            company: exp.company || "",
+            location: exp.location,
+            startDate: exp.startDate || "",
+            endDate: exp.endDate,
+            isCurrent: exp.isCurrent || false,
+            achievements: achievements || "[]",
+            sortOrder: exp.sortOrder ?? i,
+          };
+        }),
       },
       education: {
-        create: (tailoringResult.tailoredResume.education || []).map((edu: EducationData, i: number) => ({
+        create: (baseResume.education || []).map((edu: any, i: number) => ({
           school: edu.school || "",
           degree: edu.degree || "",
           field: edu.field,
@@ -213,22 +220,22 @@ export async function createTailoredResume(
           startDate: edu.startDate,
           endDate: edu.endDate || "",
           gpa: edu.gpa,
-          sortOrder: i,
+          sortOrder: edu.sortOrder ?? i,
         })),
       },
       skills: {
-        create: (tailoringResult.tailoredResume.skills || []).map((s: SkillData) => ({
+        create: (baseResume.skills || []).map((s: any) => ({
           name: s.name || "",
           category: s.category,
         })),
       },
       projects: {
-        create: (tailoringResult.tailoredResume.projects || []).map((p: ProjectData, i: number) => ({
-          name: p.name || "",
-          description: p.description || "",
-          technologies: JSON.stringify(p.technologies || []),
-          link: p.link,
-          sortOrder: i,
+        create: (baseResume.projects || []).map((proj: any, i: number) => ({
+          name: proj.name || "",
+          description: proj.description || "",
+          technologies: proj.technologies || "[]",
+          link: proj.link,
+          sortOrder: proj.sortOrder ?? i,
         })),
       },
       tailoring: {

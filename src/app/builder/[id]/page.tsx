@@ -37,6 +37,7 @@ import {
   Copy,
   Check,
   FileText,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,14 +70,27 @@ export default function BuilderPage({
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [title, setTitle] = useState("");
   const [template, setTemplate] = useState("modern");
+  const [accentColor, setAccentColor] = useState("#1f2937");
+  const [fontFamily, setFontFamily] = useState("Inter");
+  const [fontSize, setFontSize] = useState("0.8rem");
+  const [pagePadding, setPagePadding] = useState("0.5in 0.6in");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("resume");
 
+  const cleanCoverLetter = (text: string): string => {
+    if (!text) return "";
+    const signOffRegex = /(?:\r?\n)+(?:Sincerely|Warm(?:est)?\s+regards|Best\s+regards|Regards|Yours\s+truly|Yours\s+sincerely|Respectfully|Kind\s+regards|With\s+best\s+regards|Best\s+wishes|Warmly|Best\s*,|Best\s*[\r\n]),?[\s\S]*$/i;
+    return text.replace(signOffRegex, "").trim();
+  };
+
   const signatureText = resumeData ? `\n\nBest regards,\n\n${resumeData.fullName || "Nasim Uddin"}\nPhone: ${resumeData.phone || "+1 (408) 489-8765"}\nEmail: ${resumeData.email || "nasim.uddinbd02@gmail.com"}\nLinkedIn: ${resumeData.linkedin || "https://www.linkedin.com/in/nasim-uddin/"}` : "";
-  const fullCoverLetterText = resumeData?.tailoring?.coverLetterText 
-    ? `${resumeData.tailoring.coverLetterText}${signatureText}`
+  const cleanedCoverLetterText = resumeData?.tailoring?.coverLetterText 
+    ? cleanCoverLetter(resumeData.tailoring.coverLetterText)
+    : "";
+  const fullCoverLetterText = cleanedCoverLetterText 
+    ? `${cleanedCoverLetterText}${signatureText}`
     : "";
 
   const handleCopyCoverLetter = () => {
@@ -101,6 +115,17 @@ export default function BuilderPage({
 
       setTitle(r.title);
       setTemplate(r.template || "modern");
+      if (r.template && r.template.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(r.template);
+          setAccentColor(parsed.accentColor || "#1f2937");
+          setFontFamily(parsed.fontFamily || "Inter");
+          setFontSize(parsed.fontSize || "0.8rem");
+          setPagePadding(parsed.padding || "0.5in 0.6in");
+        } catch (e) {
+          console.error("Failed to parse custom template styles:", e);
+        }
+      }
       setResumeData({
         id: r.id,
         title: r.title,
@@ -153,6 +178,76 @@ export default function BuilderPage({
       fetchResume();
     }
   }, [status, router, fetchResume]);
+
+  async function handleTemplateChange(newTemplate: string) {
+    setTemplate(newTemplate);
+    if (!resumeData) return;
+
+    try {
+      setResumeData((prev) => (prev ? { ...prev, template: newTemplate } : null));
+
+      const res = await fetch(`/api/resume/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...resumeData,
+          title,
+          template: newTemplate,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(`Style template updated to ${newTemplate.charAt(0).toUpperCase() + newTemplate.slice(1)}!`);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || "Failed to auto-save template change");
+      }
+    } catch (err) {
+      console.error("Template save error:", err);
+      toast.error("Failed to auto-save template choice");
+    }
+  }
+
+  async function handleStyleChange(key: string, value: string) {
+    const newStyles = {
+      name: "custom",
+      accentColor: key === "accentColor" ? value : accentColor,
+      fontFamily: key === "fontFamily" ? value : fontFamily,
+      fontSize: key === "fontSize" ? value : fontSize,
+      padding: key === "padding" ? value : pagePadding,
+    };
+
+    if (key === "accentColor") setAccentColor(value);
+    if (key === "fontFamily") setFontFamily(value);
+    if (key === "fontSize") setFontSize(value);
+    if (key === "padding") setPagePadding(value);
+
+    const serialized = JSON.stringify(newStyles);
+    setTemplate(serialized);
+    
+    if (!resumeData) return;
+    try {
+      setResumeData(prev => prev ? { ...prev, template: serialized } : null);
+      
+      const res = await fetch(`/api/resume/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...resumeData,
+          title,
+          template: serialized,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || "Failed to auto-save style change");
+      }
+    } catch (err) {
+      console.error("Style save error:", err);
+      toast.error("Failed to auto-save style choice");
+    }
+  }
 
   async function handleSave() {
     if (!resumeData) return;
@@ -285,12 +380,13 @@ export default function BuilderPage({
           <div className="flex items-center gap-2">
             <select
               value={template}
-              onChange={(e) => setTemplate(e.target.value)}
+              onChange={(e) => handleTemplateChange(e.target.value)}
               className="bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm border border-border"
             >
               <option value="modern">Modern Template</option>
               <option value="executive">Executive Template</option>
               <option value="minimal">Minimal Template</option>
+              <option value="custom">Custom Template</option>
             </select>
             
             <Tooltip>
@@ -434,6 +530,24 @@ export default function BuilderPage({
                   <FolderKanban className="w-3.5 h-3.5" />
                   Projects
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="styling" 
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    if (!template.startsWith('{')) {
+                      handleTemplateChange(JSON.stringify({
+                        name: "custom",
+                        accentColor,
+                        fontFamily,
+                        fontSize,
+                        padding: pagePadding
+                      }));
+                    }
+                  }}
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  Styling
+                </TabsTrigger>
               </TabsList>
 
               <div className="p-6 max-h-[calc(100vh-220px)] overflow-y-auto">
@@ -495,6 +609,82 @@ export default function BuilderPage({
                       )
                     }
                   />
+                </TabsContent>
+
+                <TabsContent value="styling" className="mt-0">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Custom Styling</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Customize the visual appearance of the "Custom Template" to match your uploaded resume.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Font Family Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Font Family</label>
+                        <select
+                          value={fontFamily}
+                          onChange={(e) => handleStyleChange("fontFamily", e.target.value)}
+                          className="w-full bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm border border-border"
+                        >
+                          <option value="Inter">Sans-serif (Inter)</option>
+                          <option value="Georgia, serif">Serif (Georgia)</option>
+                          <option value="Arial, sans-serif">Standard (Arial)</option>
+                          <option value="'Times New Roman', serif">Times New Roman</option>
+                          <option value="'Courier New', monospace">Monospace (Courier)</option>
+                        </select>
+                      </div>
+
+                      {/* Font Size Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Base Font Size</label>
+                        <select
+                          value={fontSize}
+                          onChange={(e) => handleStyleChange("fontSize", e.target.value)}
+                          className="w-full bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm border border-border"
+                        >
+                          <option value="0.75rem">Small (10pt)</option>
+                          <option value="0.8rem">Medium (11pt)</option>
+                          <option value="0.85rem">Large (12pt)</option>
+                          <option value="0.9rem">Extra Large (13pt)</option>
+                        </select>
+                      </div>
+
+                      {/* Page Padding Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Page Margins</label>
+                        <select
+                          value={pagePadding}
+                          onChange={(e) => handleStyleChange("padding", e.target.value)}
+                          className="w-full bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm border border-border"
+                        >
+                          <option value="0.3in 0.4in">Narrow (0.3in / 0.4in)</option>
+                          <option value="0.5in 0.6in">Default (0.5in / 0.6in)</option>
+                          <option value="0.7in 0.8in">Wide (0.7in / 0.8in)</option>
+                        </select>
+                      </div>
+
+                      {/* Accent Color Picker */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Accent Color</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={accentColor}
+                            onChange={(e) => handleStyleChange("accentColor", e.target.value)}
+                            className="w-10 h-10 border border-border rounded cursor-pointer p-0 bg-transparent"
+                          />
+                          <Input
+                            value={accentColor}
+                            onChange={(e) => handleStyleChange("accentColor", e.target.value)}
+                            className="font-mono text-xs max-w-[100px] h-10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>
