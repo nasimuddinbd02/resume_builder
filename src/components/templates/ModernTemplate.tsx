@@ -300,6 +300,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                 lineHeight: 1.55,
                 color: '#444',
                 margin: 0,
+                textAlign: 'justify',
               }}
             >
               {data.summary}

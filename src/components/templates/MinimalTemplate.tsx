@@ -107,6 +107,7 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
                 marginTop: '0.15rem',
                 maxWidth: '3.8in',
                 lineHeight: 1.4,
+                textAlign: 'justify',
               }}
             >
               {data.summary}
