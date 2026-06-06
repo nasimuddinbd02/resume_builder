@@ -24,6 +24,28 @@ export async function exportToPDF(
   const targetHeight = pages * pageHeightPx;
   cloned.style.minHeight = `${targetHeight}px`;
 
+  // Fix Chrome's flexbox background fragmentation bug when printing
+  const aside = cloned.querySelector('aside');
+  if (aside) {
+    const originalAside = element.querySelector('aside');
+    if (originalAside) {
+      const asideWidth = originalAside.offsetWidth;
+      
+      // Apply linear-gradient to the root container so it inherently paints across all pages
+      cloned.style.backgroundImage = `linear-gradient(to right, #1e1b4b 0px, #1e1b4b ${asideWidth}px, transparent ${asideWidth}px, transparent 100%)`;
+      cloned.style.backgroundClip = 'content-box';
+      cloned.style.backgroundColor = '#ffffff';
+      
+      // Make aside and main transparent so the container's background shows through
+      aside.style.backgroundColor = 'transparent';
+      
+      const main = cloned.querySelector('main');
+      if (main) {
+        main.style.backgroundColor = 'transparent';
+      }
+    }
+  }
+
   cloned.id = printId;
   document.body.appendChild(cloned);
   
