@@ -27,6 +27,8 @@ import {
   Target,
   ExternalLink,
   Loader2,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 interface JobData {
@@ -37,6 +39,7 @@ interface JobData {
   salary: string;
   type: string;
   source: string;
+  applyUrl: string;
   postedAt: string;
   matchScore: number;
   description: string;
@@ -54,10 +57,12 @@ export default function JobsPage() {
   const [locationQuery, setLocationQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [debouncedLocation, setDebouncedLocation] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE_GRID = 6;
+  const ITEMS_PER_PAGE_TABLE = 10;
 
   // Debounce search inputs
   useEffect(() => {
@@ -98,10 +103,11 @@ export default function JobsPage() {
     }
   }, [status, router, fetchJobs]);
 
-  const totalPages = Math.ceil(jobs.length / ITEMS_PER_PAGE);
+  const itemsPerPage = viewMode === "grid" ? ITEMS_PER_PAGE_GRID : ITEMS_PER_PAGE_TABLE;
+  const totalPages = Math.ceil(jobs.length / itemsPerPage);
   const paginatedJobs = jobs.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   if (status === "loading") {
@@ -175,28 +181,53 @@ export default function JobsPage() {
           </div>
         ) : (
           <div className="fade-in-up">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h2 className="text-xl font-semibold">
                 {jobs.length} open positions
               </h2>
+              
+              <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg shrink-0">
+                <Button 
+                  variant={viewMode === "grid" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`px-3 py-1.5 h-auto ${viewMode === "grid" ? "shadow-sm" : ""}`}
+                  onClick={() => setViewMode("grid")}
+                >
+                  <LayoutGrid className="w-4 h-4 mr-1.5" />
+                  Grid
+                </Button>
+                <Button 
+                  variant={viewMode === "table" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className={`px-3 py-1.5 h-auto ${viewMode === "table" ? "shadow-sm" : ""}`}
+                  onClick={() => setViewMode("table")}
+                >
+                  <List className="w-4 h-4 mr-1.5" />
+                  List
+                </Button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 stagger-children">
-              {paginatedJobs.map((job) => (
-                <Card key={job.id} className="glass-card border-border/50 card-hover flex flex-col group">
-                  <CardHeader className="pb-4 border-b border-border/50 bg-secondary/10">
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                          {job.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Building className="w-4 h-4" />
-                          <span className="font-medium">{job.company}</span>
-                          <span>&middot;</span>
-                          <span className="text-sm">{job.location}</span>
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 stagger-children">
+                {paginatedJobs.map((job) => (
+                  <Card key={job.id} className="glass-card border-border/50 card-hover flex flex-col group">
+                    <CardHeader className="pb-4 border-b border-border/50 bg-secondary/10">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="hover:underline text-xl font-bold mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
+                            {job.title}
+                            <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full no-underline">
+                              via {job.source}
+                            </span>
+                          </a>
+                          <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                            <Building className="w-4 h-4" />
+                            <span className="font-medium">{job.company}</span>
+                            <span>&middot;</span>
+                            <span className="text-sm">{job.location}</span>
+                          </div>
                         </div>
-                      </div>
                       {job.matchScore && (
                         <div className="flex flex-col items-center shrink-0">
                           <div className={`flex items-center justify-center w-12 h-12 rounded-full border-4 ${
@@ -220,9 +251,6 @@ export default function JobsPage() {
                       <Badge variant="outline" className="text-muted-foreground">
                         {job.type}
                       </Badge>
-                      <Badge variant="outline" className="text-muted-foreground">
-                        via {job.source}
-                      </Badge>
                       <Badge variant="outline" className="text-muted-foreground ml-auto border-none">
                         <Clock className="w-3.5 h-3.5 mr-1" />
                         {job.postedAt}
@@ -239,20 +267,98 @@ export default function JobsPage() {
                         Tailor Resume
                       </Button>
                     </Link>
-                    <Button variant="outline" className="gap-2 shrink-0">
-                      Apply
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
+                    <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" className="gap-2 shrink-0">
+                        Apply
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
                   </CardFooter>
                 </Card>
               ))}
             </div>
+            ) : (
+              <div className="glass-card border border-border/50 rounded-xl overflow-hidden fade-in-up">
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-secondary/50 text-secondary-foreground border-b border-border/50">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Job Title & Source</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Company & Location</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Details</th>
+                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Match</th>
+                        <th className="px-6 py-4 font-semibold text-right whitespace-nowrap">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {paginatedJobs.map((job) => (
+                        <tr key={job.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:underline hover:text-primary flex items-center gap-1">
+                              {job.title}
+                              <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                            </a>
+                            <div className="text-muted-foreground mt-1 text-xs">
+                              via <span className="font-medium text-foreground">{job.source}</span> &middot; {job.postedAt}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium">{job.company}</div>
+                            <div className="text-muted-foreground mt-0.5 text-xs">{job.location}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-xs px-1.5 py-0.5">
+                                {job.salary}
+                              </Badge>
+                              <Badge variant="outline" className="text-muted-foreground text-xs px-1.5 py-0.5">
+                                {job.type}
+                              </Badge>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {job.matchScore ? (
+                              <Badge
+                                className={`border-none shadow-none text-xs px-1.5 py-0.5 ${
+                                  job.matchScore >= 85 ? 'bg-success/15 text-success' : 
+                                  job.matchScore >= 70 ? 'bg-warning/15 text-warning' : 
+                                  'bg-muted text-muted-foreground'
+                                }`}
+                              >
+                                {job.matchScore}%
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">N/A</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link href="/dashboard">
+                                <Button variant="ghost" size="sm" className="h-8 text-xs">
+                                  <Target className="w-3.5 h-3.5 mr-1" />
+                                  Tailor
+                                </Button>
+                              </Link>
+                              <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
+                                <Button size="sm" className="h-8 px-2">
+                                  Apply
+                                </Button>
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={jobs.length}
-              itemsPerPage={ITEMS_PER_PAGE}
+              itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
             />
           </div>
