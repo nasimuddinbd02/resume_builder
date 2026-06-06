@@ -32,7 +32,7 @@ export async function createResume(userId: string, data: Partial<ResumeData>) {
   return prisma.resume.create({
     data: {
       userId,
-      title: data.title,
+      title: data.title || 'Untitled Resume',
       isBase: data.isBase ?? true,
       template: data.template ?? 'modern',
       fullName: data.fullName || '',
@@ -104,10 +104,10 @@ export async function updateResume(id: string, userId: string, data: Partial<Res
   return prisma.resume.update({
     where: { id },
     data: {
-      title: data.title,
-      template: data.template,
-      fullName: data.fullName,
-      email: data.email,
+      title: data.title || undefined,
+      template: data.template || undefined,
+      fullName: data.fullName || undefined,
+      email: data.email || undefined,
       phone: data.phone,
       location: data.location,
       website: data.website,
@@ -171,7 +171,7 @@ export async function deleteResume(id: string, userId: string) {
 
 export async function createTailoredResume(
   userId: string,
-  baseResume: Partial<ResumeData>,
+  baseResume: any,
   tailoringResult: TailoringResult,
   coverLetterText: string,
   jobTitle: string,

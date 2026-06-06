@@ -89,9 +89,7 @@ export async function processStripeWebhook(body: string, signature: string) {
       await updateUserById(session.metadata.userId, {
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer as string,
-        // @ts-expect-error - Stripe SDK types don't expose price.id here perfectly
         stripePriceId: subscription.items.data[0].price.id,
-        // @ts-expect-error - Stripe SDK types missing current_period_end
         stripeCurrentPeriodEnd: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000),
       });
     }
@@ -115,9 +113,7 @@ export async function processStripeWebhook(body: string, signature: string) {
       const { updateStripeSubscription } = await import('@/data-access/user').catch(() => ({ updateStripeSubscription: null as unknown as (id: string, data: unknown) => Promise<unknown> }));
       if (updateStripeSubscription) {
           await updateStripeSubscription(subscription.id, {
-            // @ts-expect-error - Stripe SDK types don't expose price.id perfectly
             stripePriceId: subscription.items.data[0].price.id,
-            // @ts-expect-error - Stripe SDK types missing current_period_end
             stripeCurrentPeriodEnd: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000),
           });
       }

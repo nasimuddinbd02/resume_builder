@@ -8,60 +8,113 @@ import {
 } from '@/lib/prompts';
 import { ResumeData, TailoringResult } from '@/types/resume';
 
+// Helper to sanitize database string fields (converting 'null' and 'undefined' to proper null values)
+function sanitizeResumeDbObject(resume: any): any {
+  if (!resume) return null;
+  
+  const sanitize = (val: string | null | undefined): string | null => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === '' || lower === 'null' || lower === 'undefined') {
+      return null;
+    }
+    return trimmed;
+  };
+
+  return {
+    ...resume,
+    phone: sanitize(resume.phone),
+    location: sanitize(resume.location),
+    website: sanitize(resume.website),
+    linkedin: sanitize(resume.linkedin),
+    github: sanitize(resume.github),
+    summary: sanitize(resume.summary),
+    experiences: (resume.experiences || []).map((exp: any) => ({
+      ...exp,
+      location: sanitize(exp.location),
+      endDate: sanitize(exp.endDate),
+    })),
+    education: (resume.education || []).map((edu: any) => ({
+      ...edu,
+      field: sanitize(edu.field),
+      location: sanitize(edu.location),
+      startDate: sanitize(edu.startDate),
+      endDate: sanitize(edu.endDate),
+      gpa: sanitize(edu.gpa),
+    })),
+    projects: (resume.projects || []).map((p: any) => ({
+      ...p,
+      link: sanitize(p.link),
+    })),
+  };
+}
+
 // Helper to map DB resume format (which stores arrays as JSON strings in SQLite) to typed ResumeData
-function resumeToData(resume: Record<string, unknown>): ResumeData {
+function resumeToData(resume: any): ResumeData {
+  const sanitize = (val: string | null | undefined): string | null => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === '' || lower === 'null' || lower === 'undefined') {
+      return null;
+    }
+    return trimmed;
+  };
+
   return {
     fullName: resume.fullName as string,
     email: resume.email,
-    phone: resume.phone,
-    location: resume.location,
-    website: resume.website,
-    linkedin: resume.linkedin,
-    github: resume.github,
-    summary: resume.summary as string | null,
-    experiences: ((resume.experiences as Record<string, unknown>[]) || []).map((exp) => ({
+    phone: sanitize(resume.phone),
+    location: sanitize(resume.location),
+    website: sanitize(resume.website),
+    linkedin: sanitize(resume.linkedin),
+    github: sanitize(resume.github),
+    summary: sanitize(resume.summary),
+    experiences: ((resume.experiences as any[]) || []).map((exp) => ({
       jobTitle: exp.jobTitle as string,
       company: exp.company,
-      location: exp.location,
+      location: sanitize(exp.location),
       startDate: exp.startDate,
-      endDate: exp.endDate,
+      endDate: sanitize(exp.endDate),
       isCurrent: exp.isCurrent,
       achievements: typeof exp.achievements === 'string'
         ? JSON.parse(exp.achievements || '[]')
         : exp.achievements,
       sortOrder: exp.sortOrder as number,
     })),
-    education: ((resume.education as Record<string, unknown>[]) || []).map((edu) => ({
+    education: ((resume.education as any[]) || []).map((edu) => ({
       school: edu.school as string,
       degree: edu.degree,
-      field: edu.field,
-      location: edu.location,
-      startDate: edu.startDate,
+      field: sanitize(edu.field),
+      location: sanitize(edu.location),
+      startDate: sanitize(edu.startDate),
       endDate: edu.endDate,
-      gpa: edu.gpa,
+      gpa: sanitize(edu.gpa),
       sortOrder: edu.sortOrder,
     })),
-    skills: ((resume.skills as Record<string, unknown>[]) || []).map((s) => ({ name: s.name as string, category: s.category as string | null })),
-    projects: ((resume.projects as Record<string, unknown>[]) || []).map((p) => ({
+    skills: ((resume.skills as any[]) || []).map((s) => ({ name: s.name as string, category: s.category as string | null })),
+    projects: ((resume.projects as any[]) || []).map((p) => ({
       name: p.name as string,
       description: p.description,
       technologies: typeof p.technologies === 'string'
         ? JSON.parse(p.technologies || '[]')
         : p.technologies,
-      link: p.link,
+      link: sanitize(p.link),
       sortOrder: p.sortOrder,
     })),
   };
 }
 
 export async function listResumes(userId: string) {
-  return resumeDal.getUserResumes(userId);
+  const resumes = await resumeDal.getUserResumes(userId);
+  return resumes.map(sanitizeResumeDbObject);
 }
 
 export async function getResume(id: string, userId: string) {
   const resume = await resumeDal.getResumeById(id, userId);
   if (!resume) return null;
-  return resume;
+  return sanitizeResumeDbObject(resume);
 }
 
 export async function createResume(userId: string, data: Partial<ResumeData>) {

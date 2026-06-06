@@ -9,48 +9,63 @@ export async function exportToPDF(
     throw new Error(`Element with id '${elementId}' not found`);
   }
 
-  // Use native browser printing which generates high-quality vector PDFs
-  // and completely bypasses html2canvas/jspdf bundling issues.
-  
   const originalTitle = document.title;
   // Temporarily change title so the default saved PDF filename matches
   document.title = filename.replace('.pdf', '');
+
+  // Deeply clone the target element to avoid parent styles/transforms affecting the print layout
+  const printId = 'print-section-root';
+  const cloned = element.cloneNode(true) as HTMLElement;
+  
+  // Calculate the target height to force the background to extend to the bottom of the last page
+  const contentHeight = element.offsetHeight;
+  const pageHeightPx = 11 * 96; // 11 inches total height for PDF
+  const pages = Math.ceil(contentHeight / pageHeightPx);
+  const targetHeight = pages * pageHeightPx;
+  cloned.style.minHeight = `${targetHeight}px`;
+
+  cloned.id = printId;
+  document.body.appendChild(cloned);
   
   const style = document.createElement('style');
   style.innerHTML = `
     @media print {
-      body * {
-        visibility: hidden !important;
+      body > *:not(#${printId}) {
+        display: none !important;
       }
-      #${elementId}, #${elementId} * {
-        visibility: visible !important;
-      }
-      #${elementId} {
+      body > #${printId} {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         width: 8.5in !important;
+        min-height: 11in !important;
         margin: 0 !important;
-        padding: 0 !important;
         /* Reset any scaling used for previewing */
         transform: none !important;
         box-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body > #${printId} * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       @page {
         size: letter portrait;
-        margin: 0;
+        margin: 0 !important;
       }
     }
   `;
   document.head.appendChild(style);
   
   // Slight delay to ensure styles are applied
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => setTimeout(resolve, 150));
   
   window.print();
   
   // Cleanup
   document.head.removeChild(style);
+  document.body.removeChild(cloned);
   document.title = originalTitle;
 }
 
@@ -71,21 +86,33 @@ export function exportToDOCX(
   svgs.forEach((svg) => {
     let symbol = '•';
     const html = svg.innerHTML || '';
-    if (svg.classList.contains('lucide-mail') || html.includes('M4 4h16') || (html.includes('rect') && html.includes('path'))) {
+    if (svg.classList.contains('contact-icon-mail') || svg.classList.contains('lucide-mail') || html.includes('M4 4h16')) {
       symbol = '✉';
-    } else if (svg.classList.contains('lucide-phone') || html.includes('M22 16.92') || (html.includes('path') && (html.includes('1.23') || html.includes('1.85')))) {
+    } else if (svg.classList.contains('contact-icon-phone') || svg.classList.contains('lucide-phone') || html.includes('M22 16.92')) {
       symbol = '📞';
-    } else if (svg.classList.contains('lucide-map-pin') || html.includes('M20 10c0 6') || (html.includes('circle') && html.includes('path'))) {
+    } else if (svg.classList.contains('contact-icon-mappin') || svg.classList.contains('lucide-map-pin') || html.includes('M20 10c0 6')) {
       symbol = '📍';
-    } else if (svg.classList.contains('lucide-globe') || html.includes('circle cx="12" cy="12" r="10"')) {
+    } else if (svg.classList.contains('contact-icon-globe') || svg.classList.contains('lucide-globe') || html.includes('circle cx="12" cy="12" r="10"')) {
       symbol = '🌐';
-    } else if (html.includes('M16 8a6 6 0')) { // Linkedin
+    } else if (svg.classList.contains('contact-icon-linkedin') || html.includes('M16 8a6 6 0')) { // Linkedin
       symbol = 'LinkedIn:';
-    } else if (html.includes('M15 22v-4a')) { // Github
+    } else if (svg.classList.contains('contact-icon-github') || html.includes('M15 22v-4a')) { // Github
       symbol = 'GitHub:';
     }
     const textNode = document.createTextNode(symbol + ' ');
     svg.parentNode?.replaceChild(textNode, svg);
+  });
+
+  // Fix concatenated spans (skills & technologies badges)
+  const spans = cloned.querySelectorAll('span');
+  spans.forEach((span) => {
+    const styleAttr = span.getAttribute('style') || '';
+    if (styleAttr.includes('background-color') || styleAttr.includes('rgba') || styleAttr.includes('border') || styleAttr.includes('badge')) {
+      span.innerHTML = span.innerHTML.trim() + ' &nbsp;&nbsp;';
+      span.style.backgroundColor = 'transparent';
+      span.style.border = 'none';
+      span.style.padding = '0';
+    }
   });
 
   // Detect structure & construct table-based multi-column layout for Word
@@ -99,17 +126,24 @@ export function exportToDOCX(
     const sidebarBg = '#1e1b4b';
     const sidebarColor = '#e8e4f8';
     
+    // Calculate the target height to force the sidebar to extend to the bottom of the last page in MS Word
+    const contentHeight = element.offsetHeight;
+    const pageHeightPx = 10 * 96; // 10 inches printable height (11in - 1in margins)
+    const pages = Math.ceil(contentHeight / pageHeightPx);
+    const targetHeight = (pages * pageHeightPx) - 48; // Subtract a small safety margin to prevent a blank extra page
+
+    
     bodyContent = `
-      <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+      <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; table-layout: auto;">
         <tr>
-          <!-- Sidebar (30% width) -->
-          <td style="width: 30%; background-color: ${sidebarBg}; color: ${sidebarColor}; padding: 18pt 15pt; vertical-align: top; font-family: 'Arial', sans-serif;">
+          <!-- Sidebar (Auto width) -->
+          <td style="height: ${targetHeight}px; width: 1%; background-color: ${sidebarBg}; color: ${sidebarColor}; padding: 18pt 15pt; vertical-align: top; font-family: 'Arial', sans-serif;">
             <div style="color: ${sidebarColor};">
               ${aside.innerHTML}
             </div>
           </td>
-          <!-- Main Content (70% width) -->
-          <td style="width: 70%; background-color: #ffffff; color: #1a1a1a; padding: 18pt 20pt; vertical-align: top; font-family: 'Arial', sans-serif;">
+          <!-- Main Content (Remaining width) -->
+          <td style="width: 100%; background-color: #ffffff; color: #1a1a1a; padding: 18pt 20pt; vertical-align: top; font-family: 'Arial', sans-serif;">
             <div>
               ${main.innerHTML}
             </div>
@@ -158,10 +192,14 @@ export function exportToDOCX(
       <meta charset="utf-8">
       <title>Resume Document</title>
       <style>
-        @page {
+        @page WordSection1 {
           size: 8.5in 11.0in;
-          margin: 0.75in 0.75in 0.75in 0.75in;
+          margin: 0.5in 0.5in 0.5in 0.5in;
+          mso-header-margin: 0.5in;
+          mso-footer-margin: 0.5in;
+          mso-paper-source: 0;
         }
+        div.WordSection1 { page: WordSection1; }
         body {
           font-family: 'Arial', 'Helvetica', sans-serif;
           font-size: 10.5pt;
@@ -178,7 +216,7 @@ export function exportToDOCX(
         h2 { font-size: 13pt; font-weight: bold; border-bottom: 1.5pt solid #7c3aed; padding-bottom: 2pt; text-transform: uppercase; }
         h3 { font-size: 11pt; font-weight: bold; }
         p, ul, li { margin-top: 0; margin-bottom: 6pt; }
-        ul { margin-left: 18pt; padding-left: 0; }
+        ul { margin-left: 10pt; padding-left: 0; }
         li { list-style-type: disc; }
         table { border-collapse: collapse; width: 100%; }
         td { padding: 4px; vertical-align: top; }
@@ -186,7 +224,9 @@ export function exportToDOCX(
       </style>
     </head>
     <body>
-      ${bodyContent}
+      <div class="WordSection1">
+        ${bodyContent}
+      </div>
     </body>
     </html>
   `;

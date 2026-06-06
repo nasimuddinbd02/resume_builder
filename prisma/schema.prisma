@@ -7,29 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── NextAuth Models ────────────────────────────────────
-
 model User {
-  id             String    @id @default(uuid())
-  email          String    @unique
-  name           String?
-  hashedPassword String?
-  image          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  resumes        Resume[]
-  accounts       Account[]
-  sessions       Session[]
-  
-  // Stripe Subscription
-  stripeCustomerId       String?   @unique
-  stripeSubscriptionId   String?   @unique
+  id                     String           @id @default(uuid())
+  email                  String           @unique
+  name                   String?
+  hashedPassword         String?
+  image                  String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  stripeCustomerId       String?          @unique
+  stripeSubscriptionId   String?          @unique
   stripePriceId          String?
+  aiCredits              Int              @default(5)
+  resumesCreated         Int              @default(0)
+  creditsUsed            Int              @default(0)
   stripeCurrentPeriodEnd DateTime?
-  aiCredits               Int       @default(5)
-  resumesCreated          Int       @default(0)
-  creditsUsed             Int       @default(0)
-  jobApplications JobApplication[]
+  accounts               Account[]
+  jobApplications        JobApplication[]
+  resumes                Resume[]
+  sessions               Session[]
 }
 
 model Account {
@@ -66,56 +62,48 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ─── Resume Domain ──────────────────────────────────────
-
 model Resume {
-  id       String  @id @default(uuid())
-  userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title    String
-  isBase   Boolean @default(true)
-  template String  @default("modern")
-
-  // Personal details
-  fullName String
-  email    String
-  phone    String?
-  location String?
-  website  String?
-  linkedin String?
-  github   String?
-  summary  String?
-
-  // Relations
-  experiences WorkExperience[]
-  education   Education[]
-  skills      Skill[]
-  projects    Project[]
-  tailoring   TailoringJob? @relation("TailoredResume")
-
+  id              String           @id @default(uuid())
+  userId          String
+  title           String
+  isBase          Boolean          @default(true)
+  template        String           @default("modern")
+  fullName        String
+  email           String
+  phone           String?
+  location        String?
+  website         String?
+  linkedin        String?
+  github          String?
+  summary         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  education       Education[]
   jobApplications JobApplication[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  projects        Project[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills          Skill[]
+  tailoring       TailoringJob?    @relation("TailoredResume")
+  experiences     WorkExperience[]
 }
 
 model WorkExperience {
   id           String  @id @default(uuid())
   resumeId     String
-  resume       Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   jobTitle     String
   company      String
   location     String?
   startDate    String
   endDate      String?
   isCurrent    Boolean @default(false)
-  achievements String  // JSON array stored as string for SQLite compatibility
+  achievements String
   sortOrder    Int     @default(0)
+  resume       Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
 model Education {
   id        String  @id @default(uuid())
   resumeId  String
-  resume    Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   school    String
   degree    String
   field     String?
@@ -124,52 +112,51 @@ model Education {
   endDate   String
   gpa       String?
   sortOrder Int     @default(0)
+  resume    Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
 model Skill {
   id       String  @id @default(uuid())
   resumeId String
-  resume   Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   name     String
   category String?
+  resume   Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
 model Project {
   id           String  @id @default(uuid())
   resumeId     String
-  resume       Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   name         String
   description  String
-  technologies String  // JSON array stored as string for SQLite compatibility
+  technologies String
   link         String?
   sortOrder    Int     @default(0)
+  resume       Resume  @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
 model TailoringJob {
-  id              String  @id @default(uuid())
-  jobTitle        String
-  companyName     String
-  jobDescription  String
-  atsScore        Int?
-  coverLetterText String?
-  keywordsMatched String?
-
-  tailoredResumeId String @unique
-  tailoredResume   Resume @relation("TailoredResume", fields: [tailoredResumeId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  id               String   @id @default(uuid())
+  jobTitle         String
+  companyName      String
+  jobDescription   String
+  atsScore         Int?
+  coverLetterText  String?
+  keywordsMatched  String?
+  tailoredResumeId String   @unique
+  createdAt        DateTime @default(now())
+  tailoredResume   Resume   @relation("TailoredResume", fields: [tailoredResumeId], references: [id], onDelete: Cascade)
 }
 
 model JobApplication {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resumeId    String?   // optional link to a resume used for this application
-  resume      Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
-  title       String
-  company     String
-  link        String?
-  appliedAt   DateTime @default(now())
-  status      String   @default("Applied")
-  notes       String?
+  id        String   @id @default(uuid())
+  userId    String
+  resumeId  String?
+  title     String
+  company   String
+  link      String?
+  appliedAt DateTime @default(now())
+  status    String   @default("Applied")
+  notes     String?
+  resume    Resume?  @relation(fields: [resumeId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

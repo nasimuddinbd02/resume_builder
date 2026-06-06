@@ -31,14 +31,24 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
     {}
   );
 
+  const cleanContactValue = (val: string | null | undefined): string | null => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === '' || lower === 'null' || lower === 'undefined') {
+      return null;
+    }
+    return trimmed;
+  };
+
   const contactParts = [
-    data.email,
-    data.phone,
-    data.location,
-    data.linkedin,
-    data.github,
-    data.website,
-  ].filter(Boolean);
+    cleanContactValue(data.email),
+    cleanContactValue(data.phone),
+    cleanContactValue(data.location),
+    cleanContactValue(data.linkedin),
+    cleanContactValue(data.github),
+    cleanContactValue(data.website),
+  ].filter(Boolean) as string[];
 
   const sectionHeaderStyle: React.CSSProperties = {
     fontSize: '0.65rem',
@@ -59,7 +69,7 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
       style={{
         width: '8.5in',
         minHeight: '11in',
-        padding: '0.45in 0.5in',
+        padding: '0.5in',
         fontFamily: "'Inter', 'SF Pro Text', system-ui, sans-serif",
         backgroundColor: '#ffffff',
         color: '#1a1a1a',
@@ -198,7 +208,7 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
                     >
                       {edu.degree}
                     </p>
-                    {edu.field && (
+                    {cleanContactValue(edu.field) && (
                       <p
                         style={{
                           fontSize: '0.62rem',
@@ -227,7 +237,7 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
                     >
                       {edu.startDate && `${edu.startDate} – `}
                       {edu.endDate}
-                      {edu.gpa && ` · GPA: ${edu.gpa}`}
+                      {cleanContactValue(edu.gpa) && ` · GPA: ${cleanContactValue(edu.gpa)}`}
                     </p>
                   </div>
                 ))}
@@ -286,17 +296,17 @@ export default function MinimalTemplate({ data, id }: MinimalTemplateProps) {
                       }}
                     >
                       {exp.company}
-                      {exp.location && (
+                      {cleanContactValue(exp.location) && (
                         <span style={{ color: '#999', fontWeight: 400 }}>
-                          , {exp.location}
+                          , {cleanContactValue(exp.location)}
                         </span>
                       )}
                     </p>
                     {exp.achievements.length > 0 && (
                       <ul
                         style={{
-                          margin: '0.15rem 0 0 0.9rem',
-                          padding: 0,
+                          margin: '0.15rem 0 0 0',
+                          paddingLeft: '0.6rem',
                           listStyleType: '\'–  \'',
                         }}
                       >

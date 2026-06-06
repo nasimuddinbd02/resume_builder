@@ -20,14 +20,24 @@ export default function ExecutiveTemplate({ data, id }: ExecutiveTemplateProps) 
     (a, b) => (a.sortOrder ?? 99) - (b.sortOrder ?? 99)
   );
 
+  const cleanContactValue = (val: string | null | undefined): string | null => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === '' || lower === 'null' || lower === 'undefined') {
+      return null;
+    }
+    return trimmed;
+  };
+
   const contactParts = [
-    data.email,
-    data.phone,
-    data.location,
-    data.linkedin,
-    data.github,
-    data.website,
-  ].filter(Boolean);
+    cleanContactValue(data.email),
+    cleanContactValue(data.phone),
+    cleanContactValue(data.location),
+    cleanContactValue(data.linkedin),
+    cleanContactValue(data.github),
+    cleanContactValue(data.website),
+  ].filter(Boolean) as string[];
 
   const sectionHeaderStyle: React.CSSProperties = {
     fontSize: '0.72rem',
@@ -60,7 +70,7 @@ export default function ExecutiveTemplate({ data, id }: ExecutiveTemplateProps) 
       style={{
         width: '8.5in',
         minHeight: '11in',
-        padding: '0.6in 0.7in',
+        padding: '0.5in',
         fontFamily: "Georgia, 'Times New Roman', serif",
         backgroundColor: '#ffffff',
         color: '#1a1a1a',
@@ -154,13 +164,13 @@ export default function ExecutiveTemplate({ data, id }: ExecutiveTemplateProps) 
                   }}
                 >
                   {exp.company}
-                  {exp.location && `, ${exp.location}`}
+                  {cleanContactValue(exp.location) && `, ${cleanContactValue(exp.location)}`}
                 </p>
                 {exp.achievements.length > 0 && (
                   <ul
                     style={{
-                      margin: '0.15rem 0 0 1.2rem',
-                      padding: 0,
+                      margin: '0.15rem 0 0 0',
+                      paddingLeft: '0.6rem',
                       listStyleType: 'disc',
                     }}
                   >
@@ -230,9 +240,9 @@ export default function ExecutiveTemplate({ data, id }: ExecutiveTemplateProps) 
                   }}
                 >
                   {edu.school}
-                  {edu.location && `, ${edu.location}`}
-                  {edu.gpa && (
-                    <span style={{ color: '#777' }}> — GPA: {edu.gpa}</span>
+                  {cleanContactValue(edu.location) && `, ${cleanContactValue(edu.location)}`}
+                  {cleanContactValue(edu.gpa) && (
+                    <span style={{ color: '#777' }}> — GPA: {cleanContactValue(edu.gpa)}</span>
                   )}
                 </p>
               </div>

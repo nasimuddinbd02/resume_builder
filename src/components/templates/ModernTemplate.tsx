@@ -69,15 +69,30 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
     {}
   );
 
+  const cleanContactValue = (val: string | null | undefined): string | null => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === '' || lower === 'null' || lower === 'undefined') {
+      return null;
+    }
+    return trimmed;
+  };
+
+  const email = cleanContactValue(data.email);
+  const phone = cleanContactValue(data.phone);
+  const location = cleanContactValue(data.location);
+  const linkedin = cleanContactValue(data.linkedin);
+  const github = cleanContactValue(data.github);
+  const website = cleanContactValue(data.website);
+
   const contactItems = [
-    { icon: <Mail size={12} />, value: data.email },
-    data.phone ? { icon: <Phone size={12} />, value: data.phone } : null,
-    data.location ? { icon: <MapPin size={12} />, value: data.location } : null,
-    data.linkedin
-      ? { icon: <Linkedin size={12} />, value: data.linkedin }
-      : null,
-    data.github ? { icon: <Github size={12} />, value: data.github } : null,
-    data.website ? { icon: <Globe size={12} />, value: data.website } : null,
+    email ? { icon: <Mail size={12} className="contact-icon-mail" />, value: email } : null,
+    phone ? { icon: <Phone size={12} className="contact-icon-phone" />, value: phone } : null,
+    location ? { icon: <MapPin size={12} className="contact-icon-mappin" />, value: location } : null,
+    linkedin ? { icon: <Linkedin size={12} className="contact-icon-linkedin" />, value: linkedin } : null,
+    github ? { icon: <Github size={12} className="contact-icon-github" />, value: github } : null,
+    website ? { icon: <Globe size={12} className="contact-icon-globe" />, value: website } : null,
   ].filter(Boolean) as { icon: React.ReactNode; value: string }[];
 
   const sortedExperiences = [...data.experiences].sort(
@@ -97,7 +112,8 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
       style={{
         width: '8.5in',
         minHeight: '11in',
-        padding: '0',
+        padding: '0.5in',
+        boxSizing: 'border-box',
         fontFamily: "'Inter', sans-serif",
         display: 'flex',
         backgroundColor: '#ffffff',
@@ -107,10 +123,12 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
       {/* ── Sidebar ── */}
       <aside
         style={{
-          width: '30%',
+          width: 'min-content',
+          maxWidth: '42%',
+          flexShrink: 0,
           backgroundColor: '#1e1b4b',
           color: '#e8e4f8',
-          padding: '0.5in 0.35in',
+          padding: '0.25in 0.2in',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.1rem',
@@ -125,6 +143,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
               color: '#ffffff',
               margin: 0,
               lineHeight: 1.2,
+              whiteSpace: 'nowrap',
             }}
           >
             {data.fullName}
@@ -136,6 +155,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                 color: '#c4b5fd',
                 marginTop: '0.25rem',
                 fontWeight: 500,
+                whiteSpace: 'nowrap',
               }}
             >
               {sortedExperiences[0].jobTitle}
@@ -181,7 +201,7 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                   fontSize: '0.65rem',
                   color: '#d6d3e8',
                   lineHeight: 1.3,
-                  wordBreak: 'break-all',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <span style={{ color: ACCENT, flexShrink: 0 }}>{item.icon}</span>
@@ -249,8 +269,8 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
       {/* ── Main Content ── */}
       <main
         style={{
-          width: '70%',
-          padding: '0.5in 0.45in 0.5in 0.4in',
+          flex: 1,
+          padding: '0.25in 0 0.25in 0.3in',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.7rem',
@@ -330,10 +350,10 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                         {' '}
                         · {exp.company}
                       </span>
-                      {exp.location && (
+                      {cleanContactValue(exp.location) && (
                         <span style={{ fontSize: '0.72rem', color: '#888' }}>
                           {' '}
-                          · {exp.location}
+                          · {cleanContactValue(exp.location)}
                         </span>
                       )}
                     </div>
@@ -350,8 +370,8 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                   {exp.achievements.length > 0 && (
                     <ul
                       style={{
-                        margin: '0.2rem 0 0 1rem',
-                        padding: 0,
+                        margin: '0.2rem 0 0 0',
+                        paddingLeft: '0.6rem',
                         listStyleType: 'disc',
                       }}
                     >
@@ -415,10 +435,10 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                       >
                         {edu.school}
                       </span>
-                      {edu.location && (
+                      {cleanContactValue(edu.location) && (
                         <span style={{ fontSize: '0.72rem', color: '#888' }}>
                           {' '}
-                          · {edu.location}
+                          · {cleanContactValue(edu.location)}
                         </span>
                       )}
                     </div>
@@ -442,8 +462,8 @@ export default function ModernTemplate({ data, id }: ModernTemplateProps) {
                   >
                     {edu.degree}
                     {edu.field && ` in ${edu.field}`}
-                    {edu.gpa && (
-                      <span style={{ color: '#888' }}> · GPA: {edu.gpa}</span>
+                    {cleanContactValue(edu.gpa) && (
+                      <span style={{ color: '#888' }}> · GPA: {cleanContactValue(edu.gpa)}</span>
                     )}
                   </p>
                 </div>
