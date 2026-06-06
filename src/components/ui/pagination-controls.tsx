@@ -16,10 +16,11 @@ export function PaginationControls({
   itemsPerPage,
   onPageChange,
 }: PaginationControlsProps) {
-  if (totalItems <= itemsPerPage) return null;
+  if (totalItems === 0) return null;
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  const safeTotalPages = Math.max(1, totalPages);
 
   return (
     <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
@@ -37,13 +38,13 @@ export function PaginationControls({
           <span className="hidden sm:inline">Previous</span>
         </Button>
         <div className="text-sm font-medium px-2">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {safeTotalPages}
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= safeTotalPages}
         >
           <span className="hidden sm:inline">Next</span>
           <ChevronRight className="w-4 h-4 sm:ml-1" />
