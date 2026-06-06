@@ -42,6 +42,7 @@ import {
   Search,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import ResumeUploader from "@/components/upload/ResumeUploader";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ResumeData } from "@/types/resume";
