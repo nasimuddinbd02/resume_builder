@@ -34,6 +34,9 @@ import {
   GraduationCap,
   Wrench,
   FolderKanban,
+  Copy,
+  Check,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -68,6 +71,16 @@ export default function BuilderPage({
   const [template, setTemplate] = useState("modern");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyCoverLetter = () => {
+    if (resumeData?.tailoring?.coverLetterText) {
+      navigator.clipboard.writeText(resumeData.tailoring.coverLetterText);
+      setIsCopied(true);
+      toast.success("Cover letter copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
 
   const fetchResume = useCallback(async () => {
     try {
@@ -115,6 +128,7 @@ export default function BuilderPage({
                 : proj.technologies,
           })
         ),
+        tailoring: r.tailoring,
       });
     } catch {
       toast.error("Failed to load resume");
@@ -438,21 +452,70 @@ export default function BuilderPage({
           </div>
 
           {/* Preview panel */}
-          <div className="glass-card rounded-xl border border-border/50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">
-                Live Preview
-              </span>
-            </div>
-            <div className="p-4 max-h-[calc(100vh-220px)] overflow-y-auto flex justify-center">
-              <div className="preview-wrapper">
-                <ResumePreview
-                  data={resumeData}
-                  template={template}
-                  id="resume-preview"
-                />
-              </div>
-            </div>
+          <div className="glass-card rounded-xl border border-border/50 overflow-hidden flex flex-col">
+            {!resumeData.isBase && resumeData.tailoring?.coverLetterText ? (
+              <Tabs defaultValue="resume" className="flex flex-col h-full">
+                <div className="px-4 border-b border-border/50 flex items-center justify-between bg-secondary/20">
+                  <TabsList className="bg-transparent h-12 p-0 space-x-4">
+                    <TabsTrigger 
+                      value="resume" 
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-2"
+                    >
+                      <Target className="w-4 h-4 mr-2" />
+                      Resume Preview
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="cover-letter" 
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-2"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Cover Letter
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="resume" className="m-0 p-4 max-h-[calc(100vh-220px)] overflow-y-auto flex justify-center flex-1">
+                  <div className="preview-wrapper">
+                    <ResumePreview
+                      data={resumeData}
+                      template={template}
+                      id="resume-preview"
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="cover-letter" className="m-0 p-6 max-h-[calc(100vh-220px)] overflow-y-auto flex-1 bg-background/50">
+                  <div className="max-w-3xl mx-auto">
+                    <div className="flex justify-end mb-4">
+                      <Button variant="outline" size="sm" onClick={handleCopyCoverLetter} className="gap-2">
+                        {isCopied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                        {isCopied ? "Copied!" : "Copy to Clipboard"}
+                      </Button>
+                    </div>
+                    <div className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
+                      {resumeData.tailoring.coverLetterText}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <>
+                <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Live Preview
+                  </span>
+                </div>
+                <div className="p-4 max-h-[calc(100vh-220px)] overflow-y-auto flex justify-center">
+                  <div className="preview-wrapper">
+                    <ResumePreview
+                      data={resumeData}
+                      template={template}
+                      id="resume-preview"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>

@@ -54,6 +54,7 @@ export interface ResumeData {
   education: EducationData[];
   skills: SkillData[];
   projects: ProjectData[];
+  tailoring?: TailoringJobData | null;
 }
 
 export interface TailoringResult {
