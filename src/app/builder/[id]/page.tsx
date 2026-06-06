@@ -73,9 +73,14 @@ export default function BuilderPage({
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
+  const signatureText = resumeData ? `\n\nBest regards,\n\n${resumeData.fullName || "Nasim Uddin"}\nPhone: ${resumeData.phone || "+1 (408) 489-8765"}\nEmail: ${resumeData.email || "nasim.uddinbd02@gmail.com"}\nLinkedIn: ${resumeData.linkedin || "https://www.linkedin.com/in/nasim-uddin/"}` : "";
+  const fullCoverLetterText = resumeData?.tailoring?.coverLetterText 
+    ? `${resumeData.tailoring.coverLetterText}${signatureText}`
+    : "";
+
   const handleCopyCoverLetter = () => {
-    if (resumeData?.tailoring?.coverLetterText) {
-      navigator.clipboard.writeText(resumeData.tailoring.coverLetterText);
+    if (fullCoverLetterText) {
+      navigator.clipboard.writeText(fullCoverLetterText);
       setIsCopied(true);
       toast.success("Cover letter copied to clipboard!");
       setTimeout(() => setIsCopied(false), 2000);
@@ -100,12 +105,12 @@ export default function BuilderPage({
         title: r.title,
         isBase: r.isBase,
         template: r.template,
-        fullName: r.fullName,
-        email: r.email,
-        phone: r.phone,
+        fullName: r.fullName || "Nasim Uddin",
+        email: r.email || "nasim.uddinbd02@gmail.com",
+        phone: r.phone || "+1 (408) 489-8765",
         location: r.location,
         website: r.website,
-        linkedin: r.linkedin,
+        linkedin: r.linkedin || "https://www.linkedin.com/in/nasim-uddin/",
         github: r.github,
         summary: r.summary,
         experiences: r.experiences.map(
@@ -493,7 +498,7 @@ export default function BuilderPage({
                       </Button>
                     </div>
                     <div className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
-                      {resumeData.tailoring.coverLetterText}
+                      {fullCoverLetterText}
                     </div>
                   </div>
                 </TabsContent>
