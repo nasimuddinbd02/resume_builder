@@ -533,10 +533,37 @@ export default function BuilderPage({
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="cover-letter" className="m-0 p-6 max-h-[calc(100vh-220px)] overflow-y-auto flex-1 bg-background/50">
-                  <div className="max-w-3xl mx-auto">
-                    <div id="cover-letter-preview" className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
-                      {fullCoverLetterText}
+                <TabsContent value="cover-letter" className="m-0 p-4 max-h-[calc(100vh-220px)] overflow-y-auto flex justify-center flex-1">
+                  <div className="preview-wrapper">
+                    <div
+                      className="relative overflow-hidden rounded-xl border border-border bg-muted/30 shadow-lg"
+                      style={{ width: '100%' }}
+                    >
+                      <div
+                        style={{
+                          transform: 'scale(0.6)',
+                          transformOrigin: 'top center',
+                          marginBottom: '-40%',
+                        }}
+                      >
+                        <div
+                          id="cover-letter-preview"
+                          className="resume-preview"
+                          style={{
+                            width: '8.5in',
+                            minHeight: '11in',
+                            padding: '1in',
+                            boxSizing: 'border-box',
+                            fontFamily: "'Inter', sans-serif",
+                            backgroundColor: '#ffffff',
+                            color: '#1a1a1a',
+                          }}
+                        >
+                          <div className="text-[11pt] leading-relaxed whitespace-pre-wrap">
+                            {fullCoverLetterText}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
