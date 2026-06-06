@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -441,6 +442,7 @@ export default function ApplicationsPage() {
           )}
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

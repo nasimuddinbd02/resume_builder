@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -434,6 +434,7 @@ export default function SettingsPage() {
           </div>
         </Tabs>
       </main>
+      <Footer />
     </div>
   );
 }
