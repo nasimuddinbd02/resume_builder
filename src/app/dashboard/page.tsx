@@ -39,9 +39,11 @@ import {
   Briefcase,
   LayoutGrid,
   List,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import ResumeUploader from "@/components/upload/ResumeUploader";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ResumeData } from "@/types/resume";
 
 interface ResumeRecord {
@@ -67,6 +69,18 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [tailoredViewMode, setTailoredViewMode] = useState<"grid" | "table">("grid");
+
+  const [baseSearchQuery, setBaseSearchQuery] = useState("");
+  const [tailoredSearchQuery, setTailoredSearchQuery] = useState("");
+  const [baseCurrentPage, setBaseCurrentPage] = useState(1);
+  const [tailoredCurrentPage, setTailoredCurrentPage] = useState(1);
+
+  // Reset pagination when search changes
+  useEffect(() => setBaseCurrentPage(1), [baseSearchQuery]);
+  useEffect(() => setTailoredCurrentPage(1), [tailoredSearchQuery]);
+
+  const ITEMS_PER_PAGE_GRID = 6;
+  const ITEMS_PER_PAGE_TABLE = 10;
 
   const fetchResumes = useCallback(async () => {
     try {
@@ -170,6 +184,34 @@ export default function DashboardPage() {
   const atsScores = tailoredResumes.filter(r => r.tailoring?.atsScore != null).map(r => r.tailoring!.atsScore!);
   const avgAtsScore = atsScores.length > 0 ? Math.round(atsScores.reduce((a,b) => a+b, 0) / atsScores.length) : 0;
 
+  // Filtering Base Resumes
+  const filteredBaseResumes = baseResumes.filter(r => 
+    r.title.toLowerCase().includes(baseSearchQuery.toLowerCase()) || 
+    r.fullName.toLowerCase().includes(baseSearchQuery.toLowerCase())
+  );
+  
+  // Filtering Tailored Resumes
+  const filteredTailoredResumes = tailoredResumes.filter(r => 
+    r.title.toLowerCase().includes(tailoredSearchQuery.toLowerCase()) || 
+    (r.tailoring?.companyName || "").toLowerCase().includes(tailoredSearchQuery.toLowerCase()) ||
+    (r.tailoring?.jobTitle || "").toLowerCase().includes(tailoredSearchQuery.toLowerCase())
+  );
+
+  // Pagination for Base Resumes (Always Grid)
+  const baseTotalPages = Math.ceil(filteredBaseResumes.length / ITEMS_PER_PAGE_GRID);
+  const paginatedBaseResumes = filteredBaseResumes.slice(
+    (baseCurrentPage - 1) * ITEMS_PER_PAGE_GRID, 
+    baseCurrentPage * ITEMS_PER_PAGE_GRID
+  );
+
+  // Pagination for Tailored Resumes
+  const tailoredItemsPerPage = tailoredViewMode === "grid" ? ITEMS_PER_PAGE_GRID : ITEMS_PER_PAGE_TABLE;
+  const tailoredTotalPages = Math.ceil(filteredTailoredResumes.length / tailoredItemsPerPage);
+  const paginatedTailoredResumes = filteredTailoredResumes.slice(
+    (tailoredCurrentPage - 1) * tailoredItemsPerPage,
+    tailoredCurrentPage * tailoredItemsPerPage
+  );
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -272,11 +314,25 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Activity Feed Section */}
+        {/* Base Resumes */}
         <section className="mb-12">
-          <div className="flex items-center gap-2 mb-6">
-            <Star className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Base Resumes</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Base Resumes</h2>
+            </div>
+            {baseResumes.length > 0 && (
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search base resumes..."
+                  className="w-full pl-9 bg-background/50"
+                  value={baseSearchQuery}
+                  onChange={(e) => setBaseSearchQuery(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {baseResumes.length === 0 ? (
@@ -292,9 +348,19 @@ export default function DashboardPage() {
                 </Button>
               </CardContent>
             </Card>
+          ) : filteredBaseResumes.length === 0 ? (
+            <Card className="glass-card border-dashed border-2 border-border/50">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <Search className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                <p className="text-muted-foreground">
+                  No base resumes found matching "{baseSearchQuery}"
+                </p>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-              {baseResumes.map((resume) => (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+                {paginatedBaseResumes.map((resume) => (
                 <Card
                   key={resume.id}
                   className="glass-card border-border/50 card-hover group"
@@ -356,10 +422,18 @@ export default function DashboardPage() {
                         )}
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <PaginationControls
+                currentPage={baseCurrentPage}
+                totalPages={baseTotalPages}
+                totalItems={filteredBaseResumes.length}
+                itemsPerPage={ITEMS_PER_PAGE_GRID}
+                onPageChange={setBaseCurrentPage}
+              />
+            </>
           )}
         </section>
 
@@ -368,12 +442,25 @@ export default function DashboardPage() {
           <section>
             <Separator className="mb-8" />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-semibold">Tailored Resumes</h2>
+              <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                <div className="flex items-center gap-2 shrink-0">
+                  <Target className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Tailored Resumes</h2>
+                </div>
+                
+                <div className="relative w-full md:w-64 md:ml-4">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search tailored resumes..."
+                    className="w-full pl-9 bg-background/50"
+                    value={tailoredSearchQuery}
+                    onChange={(e) => setTailoredSearchQuery(e.target.value)}
+                  />
+                </div>
               </div>
               
-              <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg">
+              <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg shrink-0">
                 <Button 
                   variant={tailoredViewMode === "grid" ? "secondary" : "ghost"} 
                   size="sm" 
@@ -395,9 +482,18 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {tailoredViewMode === "grid" ? (
+            {filteredTailoredResumes.length === 0 ? (
+              <Card className="glass-card border-dashed border-2 border-border/50">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <Search className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                  <p className="text-muted-foreground">
+                    No tailored resumes found matching "{tailoredSearchQuery}"
+                  </p>
+                </CardContent>
+              </Card>
+            ) : tailoredViewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-                {tailoredResumes.map((resume) => (
+                {paginatedTailoredResumes.map((resume) => (
                   <Card
                     key={resume.id}
                     className="glass-card border-border/50 card-hover group"
@@ -476,7 +572,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {tailoredResumes.map((resume) => (
+                      {paginatedTailoredResumes.map((resume) => (
                         <tr key={resume.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-semibold text-foreground">{resume.title}</div>
@@ -529,6 +625,16 @@ export default function DashboardPage() {
                   </table>
                 </div>
               </div>
+            )}
+            
+            {filteredTailoredResumes.length > 0 && (
+              <PaginationControls
+                currentPage={tailoredCurrentPage}
+                totalPages={tailoredTotalPages}
+                totalItems={filteredTailoredResumes.length}
+                itemsPerPage={tailoredItemsPerPage}
+                onPageChange={setTailoredCurrentPage}
+              />
             )}
           </section>
         )}

@@ -29,10 +29,12 @@ import {
   X,
   LayoutGrid,
   List,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 interface JobApplication {
   id: string;
@@ -66,6 +68,15 @@ export default function ApplicationsPage() {
   
   const [activeTab, setActiveTab] = useState<string>("All");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const ITEMS_PER_PAGE_GRID = 6;
+  const ITEMS_PER_PAGE_TABLE = 10;
+
+  // Reset pagination when search or tab changes
+  useEffect(() => setCurrentPage(1), [searchQuery, activeTab]);
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -327,12 +338,25 @@ export default function ApplicationsPage() {
         {/* Applications Tabs & View Toggle */}
         <section>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Your Applications</h2>
+            <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+              <div className="flex items-center gap-2 shrink-0">
+                <Briefcase className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-semibold">Your Applications</h2>
+              </div>
+              
+              <div className="relative w-full md:w-64 md:ml-4">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search applications..."
+                  className="w-full pl-9 bg-background/50"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
             
-            <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg">
+            <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg shrink-0">
               <Button 
                 variant={viewMode === "grid" ? "secondary" : "ghost"} 
                 size="sm" 
@@ -371,18 +395,31 @@ export default function ApplicationsPage() {
             </TabsList>
             
             {["All", "Applied", "Interview", "Offer", "Rejected", "Withdrawn"].map(tab => {
-              const filteredApps = tab === "All" ? applications : applications.filter(a => a.status === tab);
+              const baseApps = tab === "All" ? applications : applications.filter(a => a.status === tab);
+              const filteredApps = baseApps.filter(a => 
+                a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                a.company.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+              
+              const itemsPerPage = viewMode === "grid" ? ITEMS_PER_PAGE_GRID : ITEMS_PER_PAGE_TABLE;
+              const totalPages = Math.ceil(filteredApps.length / itemsPerPage);
+              const paginatedApps = filteredApps.slice(
+                (currentPage - 1) * itemsPerPage,
+                currentPage * itemsPerPage
+              );
               
               return (
                 <TabsContent key={tab} value={tab} className="m-0 focus-visible:outline-none focus-visible:ring-0 fade-in-up">
                   {filteredApps.length === 0 ? (
                     <Card className="glass-card border-dashed border-2 border-border/50">
                       <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                        <Briefcase className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                        <Search className="w-12 h-12 text-muted-foreground/40 mb-4" />
                         <p className="text-muted-foreground mb-4">
-                          No {tab.toLowerCase()} applications yet.
+                          {searchQuery 
+                            ? `No ${tab.toLowerCase()} applications found matching "${searchQuery}"`
+                            : `No ${tab.toLowerCase()} applications yet.`}
                         </p>
-                        {tab === "All" && (
+                        {tab === "All" && !searchQuery && (
                           <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
                             <Plus className="w-4 h-4" />
                             Add Your First Application
@@ -393,7 +430,7 @@ export default function ApplicationsPage() {
                   ) : (
                     viewMode === "grid" ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-                        {filteredApps.map((app) => (
+                        {paginatedApps.map((app) => (
                           <Card
                             key={app.id}
                             className="glass-card border-border/50 card-hover group"
@@ -480,7 +517,7 @@ export default function ApplicationsPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
-                              {filteredApps.map((app) => (
+                              {paginatedApps.map((app) => (
                                 <tr key={app.id} className="hover:bg-muted/30 transition-colors">
                                   <td className="px-6 py-4">
                                     <div className="font-semibold text-foreground">{app.title}</div>
@@ -521,6 +558,16 @@ export default function ApplicationsPage() {
                         </div>
                       </div>
                     )
+                  )}
+                  
+                  {filteredApps.length > 0 && (
+                    <PaginationControls
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredApps.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                    />
                   )}
                 </TabsContent>
               );
