@@ -346,22 +346,24 @@ export default function BuilderPage({
                 </Tooltip>
               )}
 
-<Tooltip>
-   <TooltipTrigger
-     render={
-       <Button
-         variant="outline"
-         size="sm"
-         className="gap-1"
-         onClick={handleExportLinkedIn}
-       />
-     }
-   >
-       <LinkedInIcon className="w-3.5 h-3.5" />
-       LinkedIn
-   </TooltipTrigger>
-   <TooltipContent>Export for LinkedIn upload</TooltipContent>
- </Tooltip>
+              {activeTab === "resume" && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={handleExportLinkedIn}
+                      />
+                    }
+                  >
+                      <LinkedInIcon className="w-3.5 h-3.5" />
+                      LinkedIn
+                  </TooltipTrigger>
+                  <TooltipContent>Export for LinkedIn upload</TooltipContent>
+                </Tooltip>
+              )}
 
             <Tooltip>
               <TooltipTrigger
