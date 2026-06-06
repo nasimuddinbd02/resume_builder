@@ -11,7 +11,7 @@ A feature-rich, Next.js 16 application designed to construct base resumes, parse
 * **ATS Score Evaluation**: Get instant feedback on how well your tailored resume matches the job description with a generated ATS score and keyword matching analysis.
 * **Auto-generated Cover Letters**: Automatically generate personalized cover letters for every tailored resume.
 * **Job Application Tracker**: Manage your job search pipeline. Applications are automatically tracked when you tailor a resume, or you can add them manually.
-* **Multi-Format Export**: Export your resume as a print-ready PDF, an editable Microsoft Word document, or format it for LinkedIn.
+* **Multi-Format Export**: Export your resume as a print-ready PDF (featuring advanced CSS bypasses for Chrome's multi-page fragmentation bugs) or a fully editable Microsoft Word (DOCX) document that perfectly mirrors the PDF's layout, margins, and tight bullet points.
 * **AI Provider Flexibility**: Switch models dynamically between Gemini (`gemini-2.0-flash`), OpenAI (`gpt-4o-mini`), Claude (`claude-3-5-sonnet`), and Groq (`llama-3.3-70b`) via settings or `.env`.
 * **Premium Design System**: Built with modern web aesthetics using dark modes, glassmorphism, gradient text, and micro-animations.
 * **Stripe Subscription Billing**: Integrated Stripe checkout for Pro plan upgrades.
@@ -133,7 +133,7 @@ erDiagram
 
 ### Utilities
 - **Document Parsing**: `pdf-parse` (PDF extraction) and `mammoth` (DOCX extraction).
-- **Document Export**: `html2pdf.js` with `html2canvas-pro` (Print-ready PDF generation).
+- **Document Export**: Advanced HTML-to-DOCX construction with `docx`, and native print rendering with linear-gradient layout fixes for flawless multi-page PDF generation.
 - **Data Validation**: `zod` for API payload validation.
 - **Data Fetching**: `swr` for client-side state management and caching.
 
