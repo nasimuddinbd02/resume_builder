@@ -338,75 +338,105 @@ export default function ApplicationsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-              {applications.map((app) => (
-                <Card
-                  key={app.id}
-                  className="glass-card border-border/50 card-hover group"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg truncate">
-                          {app.title}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-1 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          Applied {formatDate(app.appliedAt)}
-                        </CardDescription>
+            <div className="flex gap-6 overflow-x-auto pb-8 snap-x custom-scrollbar">
+              {["Applied", "Interview", "Offer", "Rejected", "Withdrawn"].map((colName) => {
+                const columnApps = applications.filter((app) => app.status === colName);
+                if (columnApps.length === 0 && colName === "Withdrawn") return null;
+
+                return (
+                  <div key={colName} className="min-w-[320px] max-w-[320px] w-[320px] shrink-0 flex flex-col snap-start">
+                    <div className="flex items-center justify-between mb-4 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2 border-b border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`px-2.5 py-1 ${getStatusColor(colName)} border-none shadow-none text-sm`}>
+                          {colName}
+                        </Badge>
+                        <span className="text-muted-foreground text-sm font-medium">
+                          {columnApps.length}
+                        </span>
                       </div>
-                      <Badge
-                        className={`shrink-0 ${getStatusColor(app.status)}`}
-                      >
-                        {app.status}
-                      </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-1 truncate">
-                      {app.company}
-                    </p>
-                    {app.notes && (
-                      <p className="text-xs text-muted-foreground/70 mb-4 line-clamp-2">
-                        {app.notes}
-                      </p>
-                    )}
-                    {!app.notes && <div className="mb-4" />}
-                    <div className="flex items-center gap-2">
-                      {app.link && (
-                        <a
-                          href={app.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1"
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full gap-1"
+
+                    <div className="flex flex-col gap-4">
+                      {columnApps.length === 0 ? (
+                        <div className="border border-dashed border-border/50 rounded-xl p-8 text-center text-muted-foreground/60 text-sm">
+                          No {colName.toLowerCase()} applications
+                        </div>
+                      ) : (
+                        columnApps.map((app) => (
+                          <Card
+                            key={app.id}
+                            className="glass-card border-border/50 card-hover group"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            View Post
-                          </Button>
-                        </a>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <CardTitle className="text-base truncate" title={app.title}>
+                                    {app.title}
+                                  </CardTitle>
+                                  <CardDescription className="flex items-center gap-1 mt-1 text-xs">
+                                    <Calendar className="w-3 h-3" />
+                                    {formatDate(app.appliedAt)}
+                                  </CardDescription>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Briefcase className="w-3.5 h-3.5 text-primary" />
+                                </div>
+                                <p className="text-sm font-medium truncate">
+                                  {app.company}
+                                </p>
+                              </div>
+                              
+                              {app.notes && (
+                                <p className="text-xs text-muted-foreground/70 mb-4 line-clamp-2 bg-muted/30 p-2 rounded-md">
+                                  {app.notes}
+                                </p>
+                              )}
+                              {!app.notes && <div className="mb-4" />}
+                              
+                              <div className="flex items-center gap-2 pt-2 border-t border-border/50 mt-auto">
+                                {app.link && (
+                                  <a
+                                    href={app.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1"
+                                  >
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full gap-1 h-8 text-xs"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      Post
+                                    </Button>
+                                  </a>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive shrink-0 ml-auto"
+                                  onClick={() => handleDelete(app.id)}
+                                  disabled={deletingId === app.id}
+                                >
+                                  {deletingId === app.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(app.id)}
-                        disabled={deletingId === app.id}
-                      >
-                        {deletingId === app.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

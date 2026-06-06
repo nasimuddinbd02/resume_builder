@@ -34,6 +34,8 @@ import {
   Edit,
   Calendar,
   Loader2,
+  LineChart,
+  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
 import ResumeUploader from "@/components/upload/ResumeUploader";
@@ -161,6 +163,8 @@ export default function DashboardPage() {
 
   const baseResumes = resumes.filter((r) => r.isBase);
   const tailoredResumes = resumes.filter((r) => !r.isBase);
+  const atsScores = tailoredResumes.filter(r => r.tailoring?.atsScore != null).map(r => r.tailoring!.atsScore!);
+  const avgAtsScore = atsScores.length > 0 ? Math.round(atsScores.reduce((a,b) => a+b, 0) / atsScores.length) : 0;
 
   if (status === "loading" || isLoading) {
     return (
@@ -184,51 +188,87 @@ export default function DashboardPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold mb-1">
-            Welcome back,{" "}
-            <span className="gradient-text">
-              {session?.user?.name || "there"}
-            </span>
-          </h1>
-          <p className="text-muted-foreground">
-            You have {resumes.length} resume{resumes.length !== 1 ? "s" : ""}{" "}
-            saved
-          </p>
-        </div>
-
-        {/* Quick actions */}
-        <div className="flex flex-wrap gap-3 mb-10">
-          <Button onClick={handleCreateBlank} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create New Resume
-          </Button>
-          <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-            <DialogTrigger
-              render={
-                <Button variant="outline" className="gap-2">
-                  <Upload className="w-4 h-4" />
-                  Upload Resume (PDF/Word)
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Upload Your Resume</DialogTitle>
-                <DialogDescription>
-                  Upload a PDF or Word document. Our AI will extract all your
-                  information automatically.
-                </DialogDescription>
-              </DialogHeader>
-              <ResumeUploader
-                onParsed={handleParsedResume}
-                onError={(err: string) => toast.error(err)}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">
+              Welcome back,{" "}
+              <span className="gradient-text">
+                {session?.user?.name || "there"}
+              </span>
+            </h1>
+            <p className="text-muted-foreground">
+              Here is what's happening with your job search today.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleCreateBlank} className="gap-2">
+              <Plus className="w-4 h-4" />
+              New Resume
+            </Button>
+            <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+              <DialogTrigger
+                render={
+                  <Button variant="outline" className="gap-2">
+                    <Upload className="w-4 h-4" />
+                    Upload
+                  </Button>
+                }
               />
-            </DialogContent>
-          </Dialog>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Upload Your Resume</DialogTitle>
+                  <DialogDescription>
+                    Upload a PDF or Word document. Our AI will extract all your
+                    information automatically.
+                  </DialogDescription>
+                </DialogHeader>
+                <ResumeUploader
+                  onParsed={handleParsedResume}
+                  onError={(err: string) => toast.error(err)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* Base Resumes */}
+        {/* Analytics Header */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 stagger-children">
+          <Card className="glass-card border-border/50">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Resumes</p>
+                <h3 className="text-2xl font-bold">{resumes.length}</h3>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card border-border/50">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <Target className="w-6 h-6 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tailored Resumes</p>
+                <h3 className="text-2xl font-bold">{tailoredResumes.length}</h3>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card border-border/50">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                <LineChart className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg ATS Score</p>
+                <h3 className="text-2xl font-bold">{avgAtsScore > 0 ? `${avgAtsScore}%` : 'N/A'}</h3>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Activity Feed Section */}
         <section className="mb-12">
           <div className="flex items-center gap-2 mb-6">
             <Star className="w-5 h-5 text-primary" />
