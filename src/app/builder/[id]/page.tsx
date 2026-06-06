@@ -215,6 +215,28 @@ export default function BuilderPage({
     }
   }
 
+  async function handleExportCoverLetterPDF() {
+    const { exportToPDF } = await import("@/lib/pdf-export");
+    try {
+      await exportToPDF("cover-letter-preview", `${title || "cover-letter"}.pdf`);
+      toast.success("Cover Letter PDF downloaded!");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to export PDF");
+    }
+  }
+
+  async function handleExportCoverLetterDOCX() {
+    const { exportToDOCX } = await import("@/lib/pdf-export");
+    try {
+      exportToDOCX("cover-letter-preview", `${title || "cover-letter"}.doc`);
+      toast.success("Cover Letter Word document downloaded!");
+    } catch (err) {
+      console.error("Word export error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to export Word document");
+    }
+  }
+
   function updateField(field: string, value: string) {
     setResumeData((prev) =>
       prev ? { ...prev, [field]: value } : prev
@@ -491,13 +513,21 @@ export default function BuilderPage({
                 
                 <TabsContent value="cover-letter" className="m-0 p-6 max-h-[calc(100vh-220px)] overflow-y-auto flex-1 bg-background/50">
                   <div className="max-w-3xl mx-auto">
-                    <div className="flex justify-end mb-4">
+                    <div className="flex justify-end gap-2 mb-4 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={handleExportCoverLetterDOCX} className="gap-2">
+                        <Download className="w-4 h-4" />
+                        Word
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleExportCoverLetterPDF} className="gap-2">
+                        <Download className="w-4 h-4" />
+                        PDF
+                      </Button>
                       <Button variant="outline" size="sm" onClick={handleCopyCoverLetter} className="gap-2">
                         {isCopied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                        {isCopied ? "Copied!" : "Copy to Clipboard"}
+                        {isCopied ? "Copied!" : "Copy"}
                       </Button>
                     </div>
-                    <div className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
+                    <div id="cover-letter-preview" className="bg-card border border-border/50 rounded-lg p-8 shadow-sm text-sm leading-relaxed whitespace-pre-wrap font-serif">
                       {fullCoverLetterText}
                     </div>
                   </div>
