@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,8 @@ import {
   ExternalLink,
   BarChart3,
   X,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -60,6 +63,9 @@ export default function ApplicationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState<string>("All");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -318,52 +324,76 @@ export default function ApplicationsPage() {
 
         <Separator className="mb-8" />
 
-        {/* Applications Grid — same pattern as Dashboard resume cards */}
+        {/* Applications Tabs & View Toggle */}
         <section>
-          <div className="flex items-center gap-2 mb-6">
-            <Briefcase className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Your Applications</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Your Applications</h2>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg">
+              <Button 
+                variant={viewMode === "grid" ? "secondary" : "ghost"} 
+                size="sm" 
+                className={`px-3 py-1.5 h-auto ${viewMode === "grid" ? "shadow-sm" : ""}`}
+                onClick={() => setViewMode("grid")}
+              >
+                <LayoutGrid className="w-4 h-4 mr-1.5" />
+                Grid
+              </Button>
+              <Button 
+                variant={viewMode === "table" ? "secondary" : "ghost"} 
+                size="sm" 
+                className={`px-3 py-1.5 h-auto ${viewMode === "table" ? "shadow-sm" : ""}`}
+                onClick={() => setViewMode("table")}
+              >
+                <List className="w-4 h-4 mr-1.5" />
+                List
+              </Button>
+            </div>
           </div>
 
-          {applications.length === 0 ? (
-            <Card className="glass-card border-dashed border-2 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Briefcase className="w-12 h-12 text-muted-foreground/40 mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  No applications yet. Start tracking your job search!
-                </p>
-                <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Your First Application
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex gap-6 overflow-x-auto pb-8 snap-x custom-scrollbar">
-              {["Applied", "Interview", "Offer", "Rejected", "Withdrawn"].map((colName) => {
-                const columnApps = applications.filter((app) => app.status === colName);
-                if (columnApps.length === 0 && colName === "Withdrawn") return null;
-
-                return (
-                  <div key={colName} className="min-w-[320px] max-w-[320px] w-[320px] shrink-0 flex flex-col snap-start">
-                    <div className="flex items-center justify-between mb-4 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2 border-b border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`px-2.5 py-1 ${getStatusColor(colName)} border-none shadow-none text-sm`}>
-                          {colName}
-                        </Badge>
-                        <span className="text-muted-foreground text-sm font-medium">
-                          {columnApps.length}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      {columnApps.length === 0 ? (
-                        <div className="border border-dashed border-border/50 rounded-xl p-8 text-center text-muted-foreground/60 text-sm">
-                          No {colName.toLowerCase()} applications
-                        </div>
-                      ) : (
-                        columnApps.map((app) => (
+          <Tabs defaultValue="All" value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6 w-full justify-start overflow-x-auto rounded-none border-b border-border/50 bg-transparent h-auto p-0 space-x-6 custom-scrollbar pb-1">
+              {["All", "Applied", "Interview", "Offer", "Rejected", "Withdrawn"].map(tab => (
+                <TabsTrigger 
+                  key={tab} 
+                  value={tab}
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary border-b-2 border-transparent rounded-none px-1 py-3 text-sm font-medium transition-all"
+                >
+                  {tab}
+                  <Badge variant="secondary" className="ml-2 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                    {tab === "All" ? applications.length : applications.filter(a => a.status === tab).length}
+                  </Badge>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {["All", "Applied", "Interview", "Offer", "Rejected", "Withdrawn"].map(tab => {
+              const filteredApps = tab === "All" ? applications : applications.filter(a => a.status === tab);
+              
+              return (
+                <TabsContent key={tab} value={tab} className="m-0 focus-visible:outline-none focus-visible:ring-0 fade-in-up">
+                  {filteredApps.length === 0 ? (
+                    <Card className="glass-card border-dashed border-2 border-border/50">
+                      <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                        <Briefcase className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                        <p className="text-muted-foreground mb-4">
+                          No {tab.toLowerCase()} applications yet.
+                        </p>
+                        {tab === "All" && (
+                          <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            Add Your First Application
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    viewMode === "grid" ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+                        {filteredApps.map((app) => (
                           <Card
                             key={app.id}
                             className="glass-card border-border/50 card-hover group"
@@ -379,6 +409,9 @@ export default function ApplicationsPage() {
                                     {formatDate(app.appliedAt)}
                                   </CardDescription>
                                 </div>
+                                <Badge className={`px-2 py-0.5 ${getStatusColor(app.status)} border-none shadow-none text-xs shrink-0`}>
+                                  {app.status}
+                                </Badge>
                               </div>
                             </CardHeader>
                             <CardContent>
@@ -432,14 +465,67 @@ export default function ApplicationsPage() {
                               </div>
                             </CardContent>
                           </Card>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="glass-card border border-border/50 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto custom-scrollbar">
+                          <table className="w-full text-sm text-left">
+                            <thead className="bg-secondary/50 text-secondary-foreground border-b border-border/50">
+                              <tr>
+                                <th className="px-6 py-4 font-semibold whitespace-nowrap">Job Title & Company</th>
+                                <th className="px-6 py-4 font-semibold whitespace-nowrap">Status</th>
+                                <th className="px-6 py-4 font-semibold whitespace-nowrap">Applied Date</th>
+                                <th className="px-6 py-4 font-semibold text-right whitespace-nowrap">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                              {filteredApps.map((app) => (
+                                <tr key={app.id} className="hover:bg-muted/30 transition-colors">
+                                  <td className="px-6 py-4">
+                                    <div className="font-semibold text-foreground">{app.title}</div>
+                                    <div className="text-muted-foreground mt-0.5 text-xs">{app.company}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <Badge className={`${getStatusColor(app.status)} border-none shadow-none`}>
+                                      {app.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+                                    {formatDate(app.appliedAt)}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      {app.link && (
+                                        <a href={app.link} target="_blank" rel="noopener noreferrer">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                            <ExternalLink className="w-4 h-4" />
+                                          </Button>
+                                        </a>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleDelete(app.id)}
+                                        disabled={deletingId === app.id}
+                                      >
+                                        {deletingId === app.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
         </section>
       </main>
       <Footer />
